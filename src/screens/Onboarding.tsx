@@ -12,6 +12,7 @@ import { LANGS, T } from '../i18n';
 import { haptic, play, tap } from '../sound';
 import { BackIcon, Body, Bob, CheckIcon, Clip, CloseIcon, LinkText, MateIcon, Pill, Pulse, RoundBtn, Silhouette, Title, useLoop } from '../ui/kit';
 import Vessel from '../ui/Vessel';
+import FillingMate from '../ui/FillingMate';
 
 const Screen = ({ children, bg = C.bg }: { children: React.ReactNode; bg?: string }) => (
   <View style={{ flex: 1, backgroundColor: bg, overflow: 'hidden' }}>{children}</View>
@@ -27,8 +28,6 @@ function Skip({ onPress, light }: { onPress: () => void; light?: boolean }) {
 }
 
 // ---------------------------------------------------------------- 1 · Intro
-const LAYER_COLORS = ['#3FB6CF', '#6FA236', '#7A4E33', '#E3A13B'];
-
 function LangPicker() {
   const { lang, setLang } = useStore();
   return (
@@ -54,49 +53,16 @@ function LangPicker() {
 export function Intro() {
   const { go, lang } = useStore();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const size = Math.min(width - 80, 300);
-  const g = [useSharedValue(0), useSharedValue(0), useSharedValue(0), useSharedValue(0)];
-  const full = useSharedValue(0);
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    let s = 0;
-    const tick = () => {
-      s = (s + 1) % 7;
-      setStep(s);
-      if (s >= 1 && s <= 4) g[s - 1].value = withTiming(1, { duration: 1100, easing: Easing.out(Easing.cubic) });
-      if (s === 5) full.value = withSpring(1, { damping: 9 });
-      if (s === 0) {
-        full.value = withTiming(0, { duration: 400 });
-        g.forEach((v) => (v.value = 0));
-      }
-    };
-    const id = setInterval(tick, 1300);
-    return () => clearInterval(id);
-  }, []);
-
-  const fullStyle = useAnimatedStyle(() => ({ opacity: full.value, transform: [{ scale: 0.9 + 0.1 * full.value }] }));
-  const icons = [
-    <MateIcon key="a" size={56} top="#6FA236" />,
-    <Svg key="b" width={56} height={56} viewBox="0 0 64 64"><Path d="M18 18 L46 18 L42 58 L22 58 Z" fill="#EAF6FA" stroke={C.ink} strokeWidth={3} /><Path d="M20 30 L44 30 L42 58 L22 58 Z" fill="#3FB6CF" /></Svg>,
-    <Svg key="c" width={56} height={56} viewBox="0 0 64 64"><Path d="M12 22 L46 22 L43 52 Q42 57 37 57 L21 57 Q16 57 15 52 Z" fill="#8A5A3B" stroke={C.ink} strokeWidth={3} /><Path d="M46 28 Q56 28 55 37 Q54 45 44 44" fill="none" stroke={C.ink} strokeWidth={3} /></Svg>,
-    <MateIcon key="d" size={56} top="#E3A13B" />,
-    <Svg key="e" width={56} height={56} viewBox="0 0 64 64"><Path d="M32 6 L37 22 L54 22 L40 32 L45 49 L32 39 L19 49 L24 32 L10 22 L27 22 Z" fill="#F2B544" stroke={C.ink} strokeWidth={3} strokeLinejoin="round" /></Svg>,
-  ];
-  const iconIdx = step === 0 ? 0 : Math.min(4, step - 1 + (step >= 5 ? 0 : 0));
+  const { width, height } = useWindowDimensions();
 
   return (
     <Screen>
-      <View style={{ alignItems: 'center', paddingTop: insets.top + 40 }}>
-        <Animated.View key={iconIdx} entering={ZoomIn.springify()} style={{ height: 56 }}>{icons[Math.min(iconIdx, 4)]}</Animated.View>
-        <Title style={{ marginTop: 14, paddingHorizontal: 24 }}>{T[lang].introTitle}</Title>
-        <View style={{ marginTop: 28 }}>
-          <Silhouette size={size} layers={g.map((v, i) => ({ color: LAYER_COLORS[i], from: i * 0.25, to: i * 0.25 + 0.27, grow: v }))}>
-            <Animated.Image source={PENGUIN} style={[StyleSheet.absoluteFill, { width: size, height: size }, fullStyle]} />
-          </Silhouette>
+      <View style={{ alignItems: 'center', paddingTop: insets.top + 50 }}>
+        <Title style={{ paddingHorizontal: 24 }}>{T[lang].introTitle}</Title>
+        {/* El mate se llena y, cuando se completa, aparece Fueguino */}
+        <View style={{ marginTop: 24 }}>
+          <FillingMate width={Math.min(width - 32, 400)} height={Math.max(220, height - insets.top - insets.bottom - 380)} />
         </View>
-        <Text style={{ fontFamily: F.title, fontSize: 30, color: step >= 5 ? '#6B3F22' : '#B7AC9C', marginTop: 10 }}>Fueguino</Text>
       </View>
       <Animated.View entering={FadeInUp.delay(400)} style={[styles.introBottom, { bottom: insets.bottom + 32 }]}>
         <LangPicker />
