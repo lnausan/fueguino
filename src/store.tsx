@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 import { DrinkKind } from './theme';
 import { Lang } from './i18n';
 
 export type Screen =
   | 'pool' | 'intro' | 'primer' | 'recordatorios' | 'meta' | 'beneficios' | 'calculo' | 'pro'
-  | 'home' | 'yerbas' | 'catalogo' | 'puntuar' | 'ranking';
+  | 'home' | 'yerbas' | 'catalogo' | 'puntuar' | 'ranking' | 'personajes';
 
 export type Drink = { kind: DrinkKind; amount: number };
 export type Cata = { id: string; score: number; attrs: Record<string, number>; tags: string[]; note: string };
@@ -29,8 +30,17 @@ type Store = {
 
 const Ctx = createContext<Store | null>(null);
 
+// Solo en desarrollo y en la web: ?screen=home (o cualquier id) abre directo esa pantalla
+function firstScreen(): Screen {
+  if (__DEV__ && Platform.OS === 'web' && typeof window !== 'undefined') {
+    const s = new URLSearchParams(window.location.search).get('screen');
+    if (s) return s as Screen;
+  }
+  return 'pool';
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [history, setHistory] = useState<Screen[]>(['pool']);
+  const [history, setHistory] = useState<Screen[]>(() => [firstScreen()]);
   const [lang, setLang] = useState<Lang>('es');
   const [unit, setUnit] = useState<'ml' | 'oz'>('ml');
   const [goal, setGoal] = useState(1000);

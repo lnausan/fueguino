@@ -13,6 +13,7 @@ Publicada para pruebas en GitHub Pages: https://lnausan.github.io/fueguino (repo
 - Expo SDK **58** (`expo ~58.0.19`), React Native 0.88, React 19.3, TypeScript 6.
 - `react-native-reanimated 4.7.1` + `react-native-worklets 0.13.0` → animaciones y física en el hilo de UI.
 - `react-native-svg 15.16.0` → todos los dibujos (mates, vasos, siluetas, ondas, cáusticas).
+- `expo-audio` (efectos de sonido) y `expo-haptics` (vibración), ambos incluidos en Expo Go.
 - `expo-screen-orientation` (bloqueo vertical), `react-native-safe-area-context`, `expo-font` + `@expo-google-fonts/fredoka` y `@expo-google-fonts/nunito`.
 - Web: `react-native-web` + `react-dom`. `app.json` tiene `experiments.baseUrl: "/fueguino"` para Pages.
 - Instalar paquetes con `npx expo install <paquete>` (resuelve la versión compatible con SDK 58).
@@ -35,14 +36,18 @@ npx expo export -p web    # build estático en dist/ (lo que publica Pages)
 ```
 App.tsx                 Carga fuentes, bloquea vertical, Router de pantallas con FadeIn
 index.ts                Entrada
+scripts/generate-sounds.py  Genera assets/sounds/ (python3 scripts/generate-sounds.py)
 app.json                Config Expo (nombre Fueguino, fondo #6c7a36, baseUrl /fueguino)
 assets/
   fueguino-clasico.png  Pingüino mascota (pose clásica) → PENGUIN
   fueguino.png          Pingüino relajado de playa, con gafas → PENGUIN_BEACH (hoy sin uso)
+  characters/           Personajes exportados en SVG (carpintero, castor, trucha, albatros)
+  sounds/               Efectos WAV: sorbos reales CC0 (sorbo, sorbo1-4; ver CREDITOS.md) y sintetizados (pop, toc, deslizar, festejo)
   fueguino-sombra.png   Sombra del pingüino de playa (era de la pileta; hoy sin uso)
 src/
   store.tsx             Estado global (Context) + navegación
   theme.ts              Colores, fuentes, bebidas, yerbateras/marcas
+  sound.ts              Sonidos (`play`, `loopVolume`, `tap`) y vibración (`haptic`)
   i18n.ts               Idiomas (es / pt / en) y textos traducidos (`T[lang]`)
   Scene.tsx             Pantalla inicial: mate sobre yerba con física por inclinación
   YerbaBed.tsx          Fondo de yerba (mosaico SVG de 200 px), red de luz animada (Caustics) y tinte de agua (YerbaTint)
@@ -50,12 +55,15 @@ src/
   caustics.ts           Generador de red Voronoi para la red de luz
   Ripples.tsx           26 ondas en el agua del mate (SVG animado)
   Mate.tsx              Mate visto desde arriba (calabaza, virola, yerba, bombilla) + sombra + contorno de choque
-  PenguinRing.tsx       Ronda de 12 pingüinos puestos a mano (`RONDA`: posición, tamaño, giro, espejado), con saltito en ola al chocar
+  PenguinRing.tsx       Ronda de 12 personajes puestos a mano (`RONDA`: quién, posición, tamaño, giro, espejado; `SHAPE` con las medidas de cada dibujo), con saltito en ola al chocar
+  characters/           Personajes en SVG (react-native-svg), estilo Fueguino: parts.tsx (borde de sticker, mate,
+                        ojitos, cachetes) e index.tsx (Carpintero, Castor, Trucha, Albatros + lista CHARACTERS)
   ui/kit.tsx            Componentes compartidos (botones, íconos, Bob, Pulse, Silhouette…)
   ui/silhouette.ts      Contorno (80 puntos) de fueguino-clasico para la silueta que se llena
   ui/Vessel.tsx         Recipiente arrastrable para cargar una bebida
   screens/Onboarding.tsx  Intro, Primer, Recordatorios, Meta, Beneficios, Calculo, Pro
   screens/Home.tsx        Pantalla principal
+  screens/Personajes.tsx  Galería de personajes (id `personajes`)
   screens/Yerbas.tsx      Desafío "Ruta de la yerba": Desafio, Catalogo, Puntuar, Ranking
 ```
 
@@ -72,6 +80,8 @@ src/
 
 ⚠️ Todo vive **en memoria**: al recargar se pierde. Pendiente: persistir con AsyncStorage.
 
+En desarrollo y en la web, `?screen=<id>` abre directo esa pantalla (ej. `localhost:8081/?screen=personajes`).
+
 Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componente y registrarlo en el objeto `screens` de `App.tsx`.
 
 ## Tema (`src/theme.ts`)
@@ -83,7 +93,7 @@ Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componen
 
 ## Pantallas
 
-1. **Inicio (`Scene.tsx`, id `pool`)** — un **mate visto desde arriba** sobre una cama de **yerba**, con red de luz y ondas como una pileta, rodeado por una **ronda de mateada**: 12 pingüinos de 3 tamaños, desparejos, algunos cortados por el borde, la fila de abajo sentada sobre el botón. Al inclinar el teléfono el mate se desliza:
+1. **Inicio (`Scene.tsx`, id `pool`)** — un **mate visto desde arriba** sobre una cama de **yerba**, con red de luz y ondas como una pileta, rodeado por una **ronda de mateada**: 4 Fueguinos y 2 de cada personaje (carpintero, castor, trucha, albatros), alternados sin dos iguales al lado, de 3 tamaños, desparejos, algunos cortados por el borde, la fila de abajo sentada sobre el botón. Al inclinar el teléfono el mate se desliza:
    - Sensor de orientación de Reanimated (gravedad hacia abajo en ambas plataformas). `pitch = atan2(-gz,-gy)`, `roll = atan2(gx, hypot(gy,gz))`.
    - Todo corre en `useFrameCallback` (hilo UI): zona muerta de 3° con entrada suave, el "nivel cero" sigue la mano (τ≈3.3 s), arrastre de la yerba, rebote contra los bordes de la pantalla según el contorno del mate (calabaza + bombilla, `MATE_OUTLINE`) y contra el cuerpo de cada pingüino (un círculo por pingüino; chocan la boca del mate y dos puntos de la bombilla), resorte de aplastamiento, giro de hasta 30° sobre el centro de la boca, ondas al moverse. Al chocar, los pingüinos cercanos saltan en ola desde el punto del golpe.
    - En web usa `DeviceOrientationEvent` (en iOS Safari pide permiso al tocar el botón).
@@ -95,6 +105,14 @@ Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componen
    - *Catálogo*: buscador, filtros, candados y hoja de paywall.
    - *Puntuar*: 1–5 mates, segmentos de atributos, etiquetas, nota, overlay de guardado.
    - *Ranking*: podio + lista.
+
+## Sonido y vibración (`src/sound.ts`)
+
+- Botones de `ui/kit` (Pill, LinkText, RoundBtn), selector de idioma y filas de la Meta: **pop** + vibración cortita (`tap()`).
+- Inicio: **toc** al chocar el mate (volumen y vibración según la fuerza; la física avisa con `scheduleOnRN`, máx. uno cada 90 ms) y **deslizar** en loop con volumen según la velocidad.
+- Vessel: **sorbos** reales de bombilla (`sip()`, 4 variantes al azar, uno cada 420 ms) mientras sube el nivel o al tocar un chip, tic de vibración cada 100 ml, **sorbo** al confirmar.
+- **Festejo** + vibración de éxito al cebar el primer mate y al llegar a la meta en Home.
+- Respetan el modo silencio del celular (`playsInSilentMode: false`) y se mezclan con la música. En web suenan recién después del primer toque.
 
 ## Convenciones
 
@@ -108,7 +126,6 @@ Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componen
 - Traducir al portugués y al inglés el resto de las pantallas (hoy solo Intro); guardar el idioma elegido.
 
 - Persistencia (AsyncStorage).
-- Sonidos con `expo-audio` (en `assets/sounds/`) y vibración con `expo-haptics`: pop en botones, ruido de yerba al deslizarse el mate, agua vertiéndose en Vessel, sorbo al confirmar, festejo al llegar a la meta. En web el audio recién suena después del primer toque ("Inicio").
 - Silueta del Home más fiel al contorno del pingüino.
 - Verificar el signo de la inclinación en un dispositivo real.
 - Precios reales en Pro, notificaciones reales en Recordatorios.

@@ -24,6 +24,9 @@
     "backgroundColor": "#6c7a36",
     "experiments": {
       "baseUrl": "/fueguino"
-    }
+    },
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }

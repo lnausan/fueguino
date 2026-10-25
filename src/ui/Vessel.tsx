@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { SlideInDown, useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { C, DRINKS, DrinkKind, F } from '../theme';
 import { CloseIcon, RoundBtn, useLoop } from './kit';
+import { haptic, play, sip } from '../sound';
 
 const W = 220;
 const H = 250;
@@ -31,14 +32,34 @@ export default function Vessel({ kind, unit, onAdd, onClose }: { kind: DrinkKind
   const level = useSharedValue(start / MAX);
   const wave = useLoop(1600);
 
+  // Sorbos de bombilla mientras sube el nivel: uno detrás del otro (no se pisan) mientras el dedo
+  // sigue subiendo. El tono sube apenas a medida que se llena (en el celular).
+  const sipAt = useRef(0);
+  const sipNow = (fill: number) => {
+    const now = Date.now();
+    if (now - sipAt.current < 420) return;
+    sipAt.current = now;
+    sip(0.6, 0.94 + 0.14 * fill);
+  };
+
+  const last = useRef(start);
   const setFromY = (yLocal: number) => {
     const p = Math.max(0, Math.min(1, (BOTTOM - yLocal) / (BOTTOM - TOP)));
     const ml = Math.max(step, Math.round((p * MAX) / step) * step);
+    if (ml !== last.current) {
+      if (ml > last.current) sipNow(ml / MAX);
+      if (Math.floor(ml / 100) !== Math.floor(last.current / 100)) haptic.tap(); // un tic cada 100 ml
+      last.current = ml;
+    }
     level.value = ml / MAX;
     setAmount(ml);
   };
   const onTouch = (e: GestureResponderEvent) => setFromY(e.nativeEvent.locationY);
   const pick = (ml: number) => {
+    haptic.tap();
+    if (ml > amount) sipNow(ml / MAX);
+    else play('pop', 0.3);
+    last.current = ml;
     level.value = withTiming(ml / MAX, { duration: 350 });
     setAmount(ml);
   };
@@ -103,7 +124,7 @@ export default function Vessel({ kind, unit, onAdd, onClose }: { kind: DrinkKind
 
       <View style={styles.bottom}>
         <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: k.tint }} />
-        <Pressable onPress={() => onAdd(amount)} style={({ pressed }) => [styles.add, { backgroundColor: k.ink, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
+        <Pressable onPress={() => { play('sorbo'); haptic.bump(0.5); onAdd(amount); }} style={({ pressed }) => [styles.add, { backgroundColor: k.ink, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
           <Text style={{ fontFamily: F.black, fontSize: 16, color: '#fff', letterSpacing: 1 }}>+ {k.short}</Text>
         </Pressable>
         <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: k.tint }} />

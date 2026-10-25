@@ -6,6 +6,10 @@ import Animated, {
 import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { C, F, initials } from '../theme';
 import { silhouettePath } from './silhouette';
+import { tap } from '../sound';
+
+// Envuelve un onPress para que suene el pop y vibre
+const withTap = (f?: () => void) => (f ? () => { tap(); f(); } : undefined);
 
 /** Valor 0→1 que se repite en bucle (reloj de animación). */
 export function useLoop(ms: number, delay = 0) {
@@ -42,7 +46,7 @@ export function Pill({ label, onPress, dark = true, style, color, textColor }: {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={withTap(onPress)}
       style={({ pressed }) => [
         styles.pill,
         { backgroundColor: color ?? (dark ? C.ink : C.bg), transform: [{ scale: pressed ? 0.96 : 1 }] },
@@ -56,7 +60,7 @@ export function Pill({ label, onPress, dark = true, style, color, textColor }: {
 
 export function LinkText({ label, onPress, color = C.teal }: { label: string; onPress?: () => void; color?: string }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={10} style={{ height: 44, justifyContent: 'center', alignItems: 'center' }}>
+    <Pressable accessibilityRole="button" onPress={withTap(onPress)} hitSlop={10} style={{ height: 44, justifyContent: 'center', alignItems: 'center' }}>
       <Text style={{ fontFamily: F.black, fontSize: 14, color, letterSpacing: 0.5 }}>{label}</Text>
     </Pressable>
   );
@@ -64,7 +68,7 @@ export function LinkText({ label, onPress, color = C.teal }: { label: string; on
 
 export function RoundBtn({ onPress, label, children, bg = C.sand }: { onPress?: () => void; label: string; children: React.ReactNode; bg?: string }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.round, { backgroundColor: bg, opacity: pressed ? 0.7 : 1 }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={withTap(onPress)} style={({ pressed }) => [styles.round, { backgroundColor: bg, opacity: pressed ? 0.7 : 1 }]}>
       {children}
     </Pressable>
   );

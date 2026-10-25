@@ -7,6 +7,7 @@ import { C, DRINKS, DrinkKind, F, PENGUIN } from '../theme';
 import { useStore } from '../store';
 import { Bob, MateIcon, RoundBtn, Silhouette, SilLayer } from '../ui/kit';
 import Vessel from '../ui/Vessel';
+import { haptic, play } from '../sound';
 
 const KINDS: DrinkKind[] = ['amargo', 'dulce', 'terere', 'cocido', 'agua'];
 
@@ -121,6 +122,10 @@ export function Home() {
         <Vessel kind={open} unit={unit} onClose={() => setOpen(null)}
           onAdd={(ml) => {
             growNew.value = 0;
+            if (total < goal && total + ml >= goal) {
+              // ¡Meta cumplida! Festejo cuando aparece el pingüino a color
+              setTimeout(() => { play('festejo'); haptic.success(); }, 700);
+            }
             addDrink({ kind: open, amount: ml });
             growNew.value = withTiming(1, { duration: 1000, easing: Easing.out(Easing.cubic) });
             setPop({ id: Date.now(), text: `+${conv(ml)}`, color: DRINKS[open].ink });

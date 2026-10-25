@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, DRINKS, F, PENGUIN } from '../theme';
 import { useStore } from '../store';
 import { LANGS, T } from '../i18n';
+import { haptic, play, tap } from '../sound';
 import { BackIcon, Body, Bob, CheckIcon, CloseIcon, LinkText, MateIcon, Pill, Pulse, RoundBtn, Silhouette, Title, useLoop } from '../ui/kit';
 import Vessel from '../ui/Vessel';
 
@@ -39,7 +40,7 @@ function LangPicker() {
             key={l.id}
             accessibilityRole="radio"
             accessibilityState={{ selected: on }}
-            onPress={() => setLang(l.id)}
+            onPress={() => { tap(); setLang(l.id); }}
             style={({ pressed }) => [styles.langChip, on && styles.langChipOn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
           >
             <Text style={[styles.langText, on && { color: C.ink }]}>{l.flag} {l.name}</Text>
@@ -136,7 +137,7 @@ export function Primer() {
       {!done && (
         <View style={[styles.center, { position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 50 }]}>
           <Pulse style={{ width: 80, height: 80 }}>
-            <Pressable accessibilityLabel="Cebar un mate amargo" onPress={() => setStage('units')} style={styles.mateBtn}>
+            <Pressable accessibilityLabel="Cebar un mate amargo" onPress={() => { tap(); setStage('units'); }} style={styles.mateBtn}>
               <Bob amp={4} ms={1600}><MateIcon size={46} /></Bob>
             </Pressable>
           </Pulse>
@@ -177,6 +178,7 @@ export function Primer() {
             setAmount(ml);
             addDrink({ kind: 'amargo', amount: ml });
             setStage('done');
+            setTimeout(() => { play('festejo', 0.8); haptic.success(); }, 800); // aparece "¡Primer mate cebado!"
             grow.value = 0;
             grow.value = withTiming(1, { duration: 1100, easing: Easing.out(Easing.cubic) });
           }} />
@@ -391,6 +393,7 @@ export function Meta() {
             <Nudge index={k} active={!touched[r.key]}>
               <Pressable
                 onPress={() => {
+                  tap();
                   setSel((s) => ({ ...s, [r.key]: (s[r.key] + 1) % r.opts.length }));
                   setTouched((t) => ({ ...t, [r.key]: true }));
                 }}
