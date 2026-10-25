@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { SlideInDown, useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect } from 'react-native-svg';
-import { C, DRINKS, DrinkKind, F } from '../theme';
+import { C, DRINKS, DrinkKind, F, Serve } from '../theme';
 import { CloseIcon, RoundBtn, useLoop } from './kit';
 import { haptic, play, sip } from '../sound';
 
@@ -11,13 +11,12 @@ const H = 250;
 const TOP = 52; // nivel lleno
 const BOTTOM = 236; // nivel vacío
 
-// Cantidades por bebida: el mate y el tereré se toman de un termo, el cocido en taza, el agua en vaso o botella.
-const SIZES: Record<DrinkKind, { max: number; step: number; start: number; chips: { ml: number; label: string }[] }> = {
-  amargo: { max: 1500, step: 50, start: 500, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 1500, label: 'Termo grande' }] },
-  dulce: { max: 1500, step: 50, start: 500, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 1500, label: 'Termo grande' }] },
-  terere: { max: 2000, step: 50, start: 1000, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 2000, label: 'Jarra' }] },
-  cocido: { max: 600, step: 10, start: 250, chips: [{ ml: 200, label: 'Taza' }, { ml: 300, label: 'Tazón' }, { ml: 450, label: 'Jarro' }] },
-  agua: { max: 1000, step: 10, start: 250, chips: [{ ml: 250, label: 'Vaso' }, { ml: 500, label: 'Botella' }, { ml: 1000, label: 'Botella de 1 L' }] },
+// Cantidades según dónde se sirve: los mates de un termo, el tereré de una jarra, el cocido en taza, el agua en vaso o botella.
+const SIZES: Record<Serve, { max: number; step: number; start: number; chips: { ml: number; label: string }[] }> = {
+  termo: { max: 1500, step: 50, start: 500, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 1500, label: 'Termo grande' }] },
+  jarra: { max: 2000, step: 50, start: 1000, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 2000, label: 'Jarra' }] },
+  taza: { max: 600, step: 10, start: 250, chips: [{ ml: 200, label: 'Taza' }, { ml: 300, label: 'Tazón' }, { ml: 450, label: 'Jarro' }] },
+  vaso: { max: 1000, step: 10, start: 250, chips: [{ ml: 250, label: 'Vaso' }, { ml: 500, label: 'Botella' }, { ml: 1000, label: 'Botella de 1 L' }] },
 };
 const AnimatedG = Animated.createAnimatedComponent(G);
 
@@ -27,7 +26,7 @@ const GLASS = 'M28 34 L192 34 L174 236 Q172 246 162 246 L58 246 Q48 246 46 236 Z
 /** Recipiente con el nivel arrastrable con el dedo. */
 export default function Vessel({ kind, unit, onAdd, onClose }: { kind: DrinkKind; unit: 'ml' | 'oz'; onAdd: (ml: number) => void; onClose: () => void }) {
   const k = DRINKS[kind];
-  const { max: MAX, step, start, chips } = SIZES[kind];
+  const { max: MAX, step, start, chips } = SIZES[k.serve];
   const [amount, setAmount] = useState(start);
   const level = useSharedValue(start / MAX);
   const wave = useLoop(1600);
@@ -98,8 +97,8 @@ export default function Vessel({ kind, unit, onAdd, onClose }: { kind: DrinkKind
                 <AnimatedG animatedProps={waveX}>
                   <Path d="M-10 6 Q2.5 0 15 6 T40 6 T65 6 T90 6 T115 6 T140 6 T165 6 T190 6 T215 6 T240 6 T265 6 T290 6 T315 6 T340 6 L340 300 L-10 300 Z" fill={k.color} />
                 </AnimatedG>
-                {kind === 'terere' && <Rect x={70} y={12} width={24} height={24} rx={6} fill="#fff" opacity={0.8} />}
-                {kind === 'terere' && <Rect x={122} y={18} width={20} height={20} rx={5} fill="#fff" opacity={0.8} />}
+                {k.serve === 'jarra' && <Rect x={70} y={12} width={24} height={24} rx={6} fill="#fff" opacity={0.8} />}
+                {k.serve === 'jarra' && <Rect x={122} y={18} width={20} height={20} rx={5} fill="#fff" opacity={0.8} />}
               </AnimatedG>
             </G>
             {k.shape === 'gourd' && <Ellipse cx={110} cy={40} rx={80} ry={12} fill="none" stroke="#C9CDD3" strokeWidth={6} />}

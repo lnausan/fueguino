@@ -32,7 +32,7 @@ export function Bob({ children, amp = 8, ms = 2800, rot = 0, style }: { children
 }
 
 /** Animación de Fueguino (WebP animado, en loop). En iPhone usa libwebp: el decodificador de Apple mezcla mal los cuadros. */
-export function Clip({ source, size, style }: { source: number; size: number; style?: StyleProp<ViewStyle> }) {
+export function Clip({ source, size, style }: { source: React.ComponentProps<typeof ExpoImage>['source']; size: number; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[{ width: size, height: size }, style]} pointerEvents="none">
       <ExpoImage source={source} style={{ width: size, height: size }} contentFit="contain" autoplay useAppleWebpCodec={false} />

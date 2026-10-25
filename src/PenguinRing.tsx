@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { PENGUIN } from './theme';
-import { Albatros, Carpintero, Castor, Trucha } from './characters';
+import { Carpintero, Castor, LeonMarino, Trucha } from './characters';
 
 // Último golpe del mate (contra un pingüino o un borde): el saltito se contagia desde ahí.
 export type Hit = { t: number; s: number; x: number; y: number };
@@ -11,19 +11,19 @@ export const emptyHit = (): Hit => ({ t: -10, s: 0, x: 0, y: 0 });
 // Quién está en cada lugar de la ronda. Medidas de cada dibujo, en fracciones del lado:
 // `top` hasta dónde llega arriba, `foot` dónde apoya, `r` radio del cuerpo para los choques
 // y `dy` cuánto más abajo del centro está ese cuerpo.
-type Who = 'fueguino' | 'carpintero' | 'castor' | 'trucha' | 'albatros';
+type Who = 'fueguino' | 'carpintero' | 'castor' | 'trucha' | 'leon';
 const SHAPE: Record<Who, { top: number; foot: number; r: number; dy: number }> = {
   fueguino: { top: 0.07, foot: 0.93, r: 0.36, dy: 0.03 },
   carpintero: { top: 0.05, foot: 0.97, r: 0.34, dy: 0.08 },
   castor: { top: 0.13, foot: 0.95, r: 0.36, dy: 0.06 },
   trucha: { top: 0.06, foot: 0.95, r: 0.34, dy: 0.02 },
-  albatros: { top: 0.2, foot: 0.8, r: 0.3, dy: 0.04 },
+  leon: { top: 0.11, foot: 0.97, r: 0.38, dy: 0.08 },
 };
 const ART: Record<Exclude<Who, 'fueguino'>, React.ComponentType<{ size?: number }>> = {
   carpintero: Carpintero,
   castor: Castor,
   trucha: Trucha,
-  albatros: Albatros,
+  leon: LeonMarino,
 };
 const JUMP_TIME = 0.42; // s que dura el saltito
 const WAVE_SPEED = 700; // px/s con que el saltito se contagia a los vecinos
@@ -37,7 +37,6 @@ export type Spot = {
 // La ronda de mateada, puesta a mano: [quién, x (fracción del ancho), dónde, escala, giro, espejado].
 // 'arriba' apoya la cabeza contra el borde de arriba, 'abajo' se sienta sobre el botón y
 // un número es la altura del centro como fracción del alto disponible.
-// Espejado -1 da vuelta el dibujo (el albatros, que mira a la derecha, queda mirando al centro).
 type Place = [Who, number, 'arriba' | 'abajo' | number, number, number, 1 | -1];
 // Reparto parejo: 4 Fueguinos (el protagonista) y 2 de cada uno de los demás, sin dos iguales al lado.
 const RONDA: Place[] = [
@@ -45,14 +44,14 @@ const RONDA: Place[] = [
   ['trucha', 0.29, 'arriba', 0.78, -5, 1],
   ['castor', 0.6, 'arriba', 0.86, 4, 1],
   ['carpintero', 0.86, 'arriba', 1.05, -6, 1],
-  ['albatros', 0.93, 0.36, 1.15, -6, -1],
+  ['leon', 0.95, 0.36, 1.1, -7, 1],
   ['fueguino', 0.95, 0.62, 0.85, -4, 1],
   ['carpintero', 0.03, 0.44, 1.05, 8, 1],
   ['fueguino', 0.05, 0.71, 0.84, 4, -1],
   ['castor', 0.12, 'abajo', 1.25, 4, 1],
   ['fueguino', 0.36, 'abajo', 0.8, -3, -1],
   ['trucha', 0.58, 'abajo', 0.8, 5, 1],
-  ['albatros', 0.86, 'abajo', 1.3, -3, -1],
+  ['leon', 0.88, 'abajo', 1.2, -5, -1],
 ];
 
 /** Ubica la ronda entre `top` (debajo de la barra de estado) y `bottom` (el borde de arriba del botón). */

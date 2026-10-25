@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeInDown, FadeOutUp, ZoomIn, Easing, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeInDown, FadeOut, FadeOutUp, ZoomIn, Easing, useSharedValue, withTiming } from 'react-native-reanimated';
+import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, DRINKS, DrinkKind, F, FUEGUINO_BAILE, PENGUIN } from '../theme';
+import { C, DRINKS, DrinkKind, F, FUEGUINO_BAILE } from '../theme';
 import { useStore } from '../store';
 import { Bob, Clip, MateIcon, RoundBtn, Silhouette, SilLayer } from '../ui/kit';
 import Vessel from '../ui/Vessel';
+import { useImage } from 'expo-image';
+import { Carpintero, LeonMarino, Trucha } from '../characters';
 import { haptic, play } from '../sound';
 
-const KINDS: DrinkKind[] = ['amargo', 'dulce', 'terere', 'cocido', 'agua'];
+const KINDS: DrinkKind[] = ['amargo', 'dulce', 'cafe', 'naranja', 'hierbas', 'terere', 'jugo', 'cocido', 'leche', 'agua'];
 
 /** Cinta de festejo (con las puntas plegadas) para cuando se cumple la meta. */
 function Banner({ width, text }: { width: number; text: string }) {
@@ -25,6 +27,40 @@ function Banner({ width, text }: { width: number; text: string }) {
       </Svg>
       <Text style={[styles.banner, { fontSize: h * 0.36, height: h * 0.78, lineHeight: h * 0.78 }]}>{text}</Text>
     </View>
+  );
+}
+
+/** Detalle chiquito arriba a la izquierda del ícono, para distinguir las variantes. */
+function Garnish({ kind }: { kind: DrinkKind }) {
+  const slice = (
+    <>
+      <Circle cx={12} cy={12} r={9} fill="#F7A440" stroke={C.ink} strokeWidth={2} />
+      <Circle cx={12} cy={12} r={5.5} fill="#FFD08A" />
+      <Path d="M12 6.5V17.5M6.5 12H17.5M8 8L16 16M16 8L8 16" stroke="#F7A440" strokeWidth={1.2} />
+    </>
+  );
+  const art: Partial<Record<DrinkKind, React.ReactNode>> = {
+    cafe: (
+      <>
+        <Ellipse cx={12} cy={12} rx={6.5} ry={9} fill="#4A2C1C" stroke={C.ink} strokeWidth={2} transform="rotate(30 12 12)" />
+        <Path d="M9 5C14 9 10 15 15 19" fill="none" stroke="#8A5A3B" strokeWidth={1.6} strokeLinecap="round" />
+      </>
+    ),
+    naranja: slice,
+    jugo: slice,
+    hierbas: (
+      <>
+        <Path d="M4 20C4 10 10 4 20 4C20 14 14 20 4 20Z" fill="#4FB37A" stroke={C.ink} strokeWidth={2} strokeLinejoin="round" />
+        <Path d="M5 19L15 9" stroke="#226B45" strokeWidth={1.5} strokeLinecap="round" />
+      </>
+    ),
+    leche: <Path d="M12 3C15 8 18 11 18 15A6 6 0 0 1 6 15C6 11 9 8 12 3Z" fill="#FFFFFF" stroke={C.ink} strokeWidth={2} strokeLinejoin="round" />,
+  };
+  if (!art[kind]) return null;
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" style={{ position: 'absolute', left: -4, top: -2 }}>
+      {art[kind]}
+    </Svg>
   );
 }
 
@@ -56,6 +92,7 @@ export function Home() {
   const [pop, setPop] = useState<{ id: number; text: string; color: string } | null>(null);
   const [chOpen, setChOpen] = useState(true);
   const growNew = useSharedValue(1);
+  const baile = useImage(FUEGUINO_BAILE); // precargada: que aparezca al instante al cumplir la meta
 
   const total = drinks.reduce((a, d) => a + d.amount, 0);
   const pct = Math.round((total / goal) * 100);
@@ -71,9 +108,10 @@ export function Home() {
 
   const conv = (ml: number) => (unit === 'oz' ? Math.round(ml / 29.57) : ml);
   const challenges = [
-    { title: 'Ruta de la yerba', kicker: 'DESAFÍO · 26 MARCAS', text: 'Probá y puntuá yerbas. Las primeras 3 son gratis.', bg: C.navy, tag: 'NUEVO', link: true },
-    { title: 'Último mate a las 18', kicker: 'DESAFÍO DE 10 DÍAS', text: 'Cortá la cafeína a tiempo y dormí mejor.', bg: '#6B3F22', tag: 'PRONTO', link: false },
-    { title: 'Semana de tereré', kicker: 'DESAFÍO DE 7 DÍAS', text: 'Un tereré bien frío en los días de sol.', bg: '#3F7A2A', tag: 'PRONTO', link: false },
+    // Cada desafío lo presenta un personaje: el león marino, el carpintero madrugador y la trucha de agua fría
+    { title: 'Ruta de la yerba', kicker: 'DESAFÍO · 26 MARCAS', text: 'Probá y puntuá yerbas. Las primeras 3 son gratis.', bg: C.navy, tag: 'NUEVO', link: true, Art: LeonMarino },
+    { title: 'Último mate a las 18', kicker: 'DESAFÍO DE 10 DÍAS', text: 'Cortá la cafeína a tiempo y dormí mejor.', bg: '#6B3F22', tag: 'PRONTO', link: false, Art: Carpintero },
+    { title: 'Semana de tereré', kicker: 'DESAFÍO DE 7 DÍAS', text: 'Un tereré bien frío en los días de sol.', bg: '#3F7A2A', tag: 'PRONTO', link: false, Art: Trucha },
   ];
 
   return (
@@ -95,22 +133,24 @@ export function Home() {
             <Animated.Text key={pop.id} entering={ZoomIn} exiting={FadeOutUp.duration(900)} style={[styles.pop, { color: pop.color }]}>{pop.text}</Animated.Text>
           )}
           {/* Aire arriba para que Fueguino, cuando salta bailando, no toque el texto */}
-          <View style={{ marginTop: 28 }}>
-            <Silhouette size={size} layers={layers}>
-              {total >= goal && (
-                // ¡Meta cumplida! Fueguino baila (tapa la silueta llena)
-                <Animated.View entering={ZoomIn.springify()} style={[StyleSheet.absoluteFill, { backgroundColor: C.bg }]}>
-                  {/* Un poco más chico y más abajo: en el salto más alto la cabeza llega al borde del video */}
-                  <Clip source={FUEGUINO_BAILE} size={size * 0.9} style={{ alignSelf: 'center', marginTop: size * 0.1 }} />
-                  {/* La cinta tapa el borde de arriba del video: en el salto, la cabeza pasa por detrás */}
-                  <Animated.View entering={ZoomIn.delay(250).springify()} style={{ position: 'absolute', top: size * 0.1 - 16, left: size * 0.1, right: size * 0.1 }}>
-                    <Bob amp={1.5} ms={2400} rot={2}>
-                      <Banner width={size * 0.8} text="¡Meta cumplida!" />
-                    </Bob>
-                  </Animated.View>
+          <View style={{ marginTop: 28, width: size, height: size }}>
+            {total < goal ? (
+              <Animated.View exiting={FadeOut.duration(250)} style={StyleSheet.absoluteFill}>
+                <Silhouette size={size} layers={layers} />
+              </Animated.View>
+            ) : (
+              // ¡Meta cumplida! La silueta se desvanece y entra Fueguino bailando (sin fondo)
+              <Animated.View entering={ZoomIn.springify()} style={StyleSheet.absoluteFill}>
+                {/* Un poco más chico y más abajo: en el salto más alto la cabeza llega al borde del video */}
+                <Clip source={baile ?? FUEGUINO_BAILE} size={size * 0.9} style={{ alignSelf: 'center', marginTop: size * 0.1 }} />
+                {/* La cinta tapa el borde de arriba del video: en el salto, la cabeza pasa por detrás */}
+                <Animated.View entering={ZoomIn.delay(250).springify()} style={{ position: 'absolute', top: size * 0.1 - 16, left: size * 0.1, right: size * 0.1 }}>
+                  <Bob amp={1.5} ms={2400} rot={2}>
+                    <Banner width={size * 0.8} text="¡Meta cumplida!" />
+                  </Bob>
                 </Animated.View>
-              )}
-            </Silhouette>
+              </Animated.View>
+            )}
           </View>
         </View>
 
@@ -119,6 +159,7 @@ export function Home() {
             <Pressable key={k} accessibilityLabel={`Agregar ${DRINKS[k].name}`} onPress={() => setOpen(k)} style={({ pressed }) => [styles.bev, { transform: [{ scale: pressed ? 0.9 : 1 }] }]}>
               <View>
                 <DrinkIcon kind={k} />
+                <Garnish kind={k} />
                 <View style={styles.plus}><Text style={{ fontFamily: F.black, fontSize: 12, color: C.ink, lineHeight: 14 }}>+</Text></View>
               </View>
               <Text style={styles.bevLabel}>{DRINKS[k].short}</Text>
@@ -140,7 +181,7 @@ export function Home() {
                   <Text style={styles.chText}>{c.text}</Text>
                   <Text style={[styles.chTag, c.link && { backgroundColor: '#F2B544', color: C.ink }]}>{c.tag}</Text>
                   <Bob amp={6} ms={3000} rot={3} style={{ position: 'absolute', right: -6, bottom: -34 }}>
-                    <Image source={PENGUIN} style={{ width: 120, height: 120 }} />
+                    <c.Art size={120} />
                   </Bob>
                 </Pressable>
               </Animated.View>

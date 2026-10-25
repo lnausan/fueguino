@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import { Cheek, HappyEye, INK, Ink, Line, MateProp, Sticker, ell, mateSilhouette } from './parts';
 
 // Personajes de la app, en el estilo de Fueguino (caja de 200×200, cada uno con su mate).
@@ -138,49 +138,48 @@ export function Carpintero({ size }: Props) {
   );
 }
 
-// ---------------------------------------------------------------- Albatros (de ceja negra)
-// De perfil, con cuerpo de ave: alas largas plegadas sobre el lomo (la punta pasa la cola),
-// pico largo y ganchudo, y tomando de la bombilla del mate que tiene adelante.
-const ALBATROS = {
-  body: 'M24 130C24 104 50 92 82 92C100 92 112 96 120 102C128 88 138 80 150 80C166 80 176 92 174 106C172 118 162 124 152 126C146 140 136 156 116 162C102 168 88 168 74 168C44 168 24 154 24 130Z',
-  wing: 'M124 106C104 98 70 98 42 108C30 112 16 114 8 112C16 124 34 132 58 136C88 140 112 132 126 120C130 114 129 108 124 106Z',
-  tail: 'M30 126L10 132L16 144L34 140Z',
-  beak: 'M166 96C176 98 186 104 192 112C196 118 194 126 189 126C188 121 185 119 181 118C176 116 170 114 165 112C162 107 162 100 166 96Z',
-  hook: 'M184 110C191 113 196 120 194 127C192 131 188 130 187 126C187 122 185 119 182 117Z',
-  footL: 'M53 184C55 178 61 175 66 175C71 175 77 178 79 184C75 182 71 183 66 184C61 183 57 182 53 184Z',
-  footR: 'M87 184C89 178 95 175 100 175C105 175 111 178 113 184C109 182 105 183 100 184C95 183 91 182 87 184Z',
+// ---------------------------------------------------------------- León marino (de un pelo, macho)
+// Sentado erguido como en la Isla de los Lobos: melena oscura de collar, hocico con bigotes y
+// el mate en las aletas de adelante; las de atrás, abiertas como patitas.
+const LEON = {
+  body: 'M100 30C128 30 142 50 142 76C142 96 152 120 156 146C160 172 136 186 100 186C64 186 40 172 44 146C48 120 58 96 58 76C58 50 72 30 100 30Z',
+  backL: 'M70 176C56 182 40 187 33 180C37 171 56 167 73 169Z',
+  backR: 'M130 176C144 182 160 187 167 180C163 171 144 167 127 169Z',
+  frontL: 'M62 112C53 126 59 143 82 145C88 139 86 128 80 120Z',
+  frontR: 'M138 112C147 126 141 143 118 145C112 139 114 128 120 120Z',
 };
-const WING = '#45423F';
+const PIEL = '#B5835A';
+const ALETA = '#7E5235';
 
-export function Albatros({ size }: Props) {
-  const a = ALBATROS;
+export function LeonMarino({ size }: Props) {
+  const l = LEON;
   return (
     <Frame size={size}>
-      <G transform="translate(2 -22) scale(0.95)">
-        <Sticker silhouette={[a.tail, a.wing, a.body, a.beak, a.hook, a.footL, a.footR, ...mateSilhouette(172, 162)]} />
-        {/* Patas palmeadas */}
-        <Line d="M68 166L66 178M100 166L100 178" w={4} color="#D99C90" />
-        <Ink d={a.footL} fill="#EDB3A6" w={2.4} />
-        <Ink d={a.footR} fill="#EDB3A6" w={2.4} />
-        <Ink d={a.tail} fill={WING} />
-        <Ink d={a.body} fill="#FBF8F1" />
-        <Path d="M40 148C56 160 86 164 112 156" fill="none" stroke="#ECE6DA" strokeWidth={8} strokeLinecap="round" />
-        {/* Ala larga plegada sobre el lomo */}
-        <Ink d={a.wing} fill={WING} />
-        <Line d="M30 118C52 126 80 128 104 122" w={2} color="#6B6762" />
-        <Line d="M46 112L38 124M62 108L56 126M78 106L74 127M94 106L92 126" w={1.6} color="#5C5853" />
-        {/* Cabeza: nuca gris, ceja negra, ojito feliz */}
-        <Path d="M128 96C130 86 138 80 148 80C140 84 134 90 134 100Z" fill="#E4E0DA" />
-        <Line d="M137 92Q150 83 163 90" w={5} color="#4A4642" />
-        <HappyEye x={150} y={97} />
-        <Cheek x={155} y={113} />
-        {/* Pico largo y ganchudo */}
-        <Ink d={a.beak} fill="#F2B33D" />
-        <Line d="M170 98C176 100 181 103 184 106" w={1.5} color="#C98A2A" />
-        <Line d="M167 105C175 108 183 112 189 117" w={1.5} color="#B87822" />
-        <Ink d={a.hook} fill="#E0832F" w={2.4} />
-        <MateProp x={172} y={162} />
-      </G>
+      <Sticker silhouette={[l.backL, l.backR, l.body, l.frontL, l.frontR, ...mateSilhouette(100, 140)]} />
+      <Ink d={l.backL} fill={ALETA} />
+      <Ink d={l.backR} fill={ALETA} />
+      <Line d="M44 178L56 174M50 182L62 176M156 178L144 174M150 182L138 176" w={1.5} color="#5C3A24" />
+      <Ink d={l.body} fill={PIEL} />
+      <Path d={ell(100, 152, 33, 28)} fill="#D9AE82" />
+      {/* Melena del macho, como un collar más oscuro */}
+      <Path d="M60 90C72 106 128 106 140 90C143 100 143 110 138 116C122 124 78 124 62 116C57 110 57 100 60 90Z" fill="#94603D" />
+      <Line d="M70 106L68 116M84 110L83 120M100 111V121M116 110L117 120M130 106L132 116" w={1.5} color="#7A4C2E" />
+      {/* Orejitas chiquitas */}
+      <Line d="M63 58C58 52 60 45 66 46M137 58C142 52 140 45 134 46" w={2.6} />
+      {/* Cara: hocico ancho con bigotes y nariz grande */}
+      <Ink d={ell(100, 80, 21, 13)} fill="#E4C197" />
+      <Line d="M80 79L63 75M80 84L63 86M120 79L137 75M120 84L137 86" w={1.4} />
+      {[[88, 80], [85, 85], [112, 80], [115, 85]].map(([x, y]) => <Circle key={`${x}${y}`} cx={x} cy={y} r={1.3} fill="#8A6A4E" />)}
+      <Ink d="M91 71Q100 66 109 71Q107 78 100 79Q93 78 91 71Z" fill={INK} />
+      <Ellipse cx={97} cy={71} rx={2.4} ry={1.3} fill="#fff" fillOpacity={0.7} />
+      <Line d="M93 85Q100 90 107 85" w={2.6} />
+      <HappyEye x={81} y={60} />
+      <HappyEye x={119} y={60} />
+      <Cheek x={70} y={76} />
+      <Cheek x={130} y={76} />
+      <MateProp x={100} y={140} />
+      <Ink d={l.frontL} fill={ALETA} />
+      <Ink d={l.frontR} fill={ALETA} />
     </Frame>
   );
 }
@@ -189,5 +188,5 @@ export const CHARACTERS = [
   { id: 'carpintero', name: 'Carpintero', Component: Carpintero },
   { id: 'castor', name: 'Castor', Component: Castor },
   { id: 'trucha', name: 'Trucha', Component: Trucha },
-  { id: 'albatros', name: 'Albatros', Component: Albatros },
+  { id: 'leon-marino', name: 'León marino', Component: LeonMarino },
 ] as const;

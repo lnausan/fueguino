@@ -35,14 +35,24 @@ export const PENGUIN_BEACH = require('../assets/fueguino.png');
 export const FUEGUINO_BAILE = require('../assets/videos/fueguino-baile.webp');
 export const FUEGUINO_SOMBRERO = require('../assets/videos/fueguino-sombrero.webp');
 
-export type DrinkKind = 'amargo' | 'dulce' | 'terere' | 'cocido' | 'agua';
+export type DrinkKind =
+  | 'amargo' | 'dulce' | 'cafe' | 'naranja' | 'hierbas'
+  | 'terere' | 'jugo' | 'cocido' | 'leche' | 'agua';
 
-export const DRINKS: Record<DrinkKind, { name: string; short: string; color: string; ink: string; tint: string; shape: 'gourd' | 'glass' | 'mug'; caption: string }> = {
-  amargo: { name: 'Mate amargo', short: 'AMARGO', color: '#6FA236', ink: '#4F7A22', tint: '#E9F2DA', shape: 'gourd', caption: 'Mate amargo · con cafeína' },
-  dulce: { name: 'Mate dulce', short: 'DULCE', color: '#E3A13B', ink: '#94590C', tint: '#FBEBCB', shape: 'gourd', caption: 'Mate dulce · con cafeína' },
-  terere: { name: 'Tereré', short: 'TERERÉ', color: '#3FB6CF', ink: '#17707F', tint: '#DCF1F6', shape: 'glass', caption: 'Tereré bien frío · con cafeína' },
-  cocido: { name: 'Mate cocido', short: 'COCIDO', color: '#8A5A3B', ink: '#6B3F22', tint: '#F1E2D6', shape: 'mug', caption: 'Mate cocido · con cafeína' },
-  agua: { name: 'Agua', short: 'AGUA', color: '#8FD0EA', ink: '#1C6585', tint: '#E3F3FA', shape: 'glass', caption: 'Agua · sin cafeína' },
+// Dónde se sirve cada bebida: define las cantidades para elegir (termo, jarra, taza o vaso)
+export type Serve = 'termo' | 'jarra' | 'taza' | 'vaso';
+
+export const DRINKS: Record<DrinkKind, { name: string; short: string; color: string; ink: string; tint: string; shape: 'gourd' | 'glass' | 'mug'; serve: Serve; caption: string }> = {
+  amargo: { name: 'Mate amargo', short: 'AMARGO', color: '#6FA236', ink: '#4F7A22', tint: '#E9F2DA', shape: 'gourd', serve: 'termo', caption: 'Mate amargo · con cafeína' },
+  dulce: { name: 'Mate dulce', short: 'DULCE', color: '#E3A13B', ink: '#94590C', tint: '#FBEBCB', shape: 'gourd', serve: 'termo', caption: 'Mate dulce · con cafeína' },
+  cafe: { name: 'Mate con café', short: 'CON CAFÉ', color: '#6B4430', ink: '#4A2C1C', tint: '#EFE2D8', shape: 'gourd', serve: 'termo', caption: 'Mate con café · doble cafeína' },
+  naranja: { name: 'Mate con naranja', short: 'NARANJA', color: '#F08A24', ink: '#A9530A', tint: '#FDE7D0', shape: 'gourd', serve: 'termo', caption: 'Mate con cáscara de naranja · con cafeína' },
+  hierbas: { name: 'Mate con hierbas', short: 'HIERBAS', color: '#3E9B6A', ink: '#226B45', tint: '#DDF1E5', shape: 'gourd', serve: 'termo', caption: 'Con menta, peperina o cedrón · con cafeína' },
+  terere: { name: 'Tereré', short: 'TERERÉ', color: '#3FB6CF', ink: '#17707F', tint: '#DCF1F6', shape: 'glass', serve: 'jarra', caption: 'Tereré bien frío · con cafeína' },
+  jugo: { name: 'Tereré con jugo', short: 'CON JUGO', color: '#F5A524', ink: '#9A5F06', tint: '#FDEFD2', shape: 'glass', serve: 'jarra', caption: 'Tereré ruso, con jugo de naranja o pomelo · con cafeína' },
+  cocido: { name: 'Mate cocido', short: 'COCIDO', color: '#8A5A3B', ink: '#6B3F22', tint: '#F1E2D6', shape: 'mug', serve: 'taza', caption: 'Mate cocido · con cafeína' },
+  leche: { name: 'Cocido con leche', short: 'CON LECHE', color: '#C9A27C', ink: '#7A5434', tint: '#F5ECE2', shape: 'mug', serve: 'taza', caption: 'Mate cocido con leche · con cafeína' },
+  agua: { name: 'Agua', short: 'AGUA', color: '#8FD0EA', ink: '#1C6585', tint: '#E3F3FA', shape: 'glass', serve: 'vaso', caption: 'Agua · sin cafeína' },
 };
 
 // Yerbateras en el orden del ranking de ventas, con sus marcas

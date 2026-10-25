@@ -44,7 +44,7 @@ assets/
   fueguino.png          Pingüino relajado de playa, con gafas → PENGUIN_BEACH (hoy sin uso)
   videos/               Animaciones de Fueguino (baile, sombrero): .webp animado con transparencia (lo que usa la app),
                         .webm transparente y -vista.mp4 con fondo (no se usan en la app)
-  characters/           Personajes exportados en SVG (carpintero, castor, trucha, albatros)
+  characters/           Personajes exportados en SVG (carpintero, castor, trucha, león marino)
   sounds/               Efectos WAV: sorbos reales CC0 (sorbo, sorbo1-4; ver CREDITOS.md) y sintetizados (pop, festejo)
   fueguino-sombra.png   Sombra del pingüino de playa (era de la pileta; hoy sin uso)
 src/
@@ -60,7 +60,7 @@ src/
   Mate.tsx              Mate visto desde arriba (calabaza, virola, yerba, bombilla) + sombra + contorno de choque
   PenguinRing.tsx       Ronda de 12 personajes puestos a mano (`RONDA`: quién, posición, tamaño, giro, espejado; `SHAPE` con las medidas de cada dibujo), con saltito en ola al chocar
   characters/           Personajes en SVG (react-native-svg), estilo Fueguino: parts.tsx (borde de sticker, mate,
-                        ojitos, cachetes) e index.tsx (Carpintero, Castor, Trucha, Albatros + lista CHARACTERS)
+                        ojitos, cachetes) e index.tsx (Carpintero, Castor, Trucha, LeonMarino + lista CHARACTERS)
   ui/kit.tsx            Componentes compartidos (botones, íconos, Bob, Pulse, Silhouette…)
   ui/silhouette.ts      Contorno (80 puntos) de fueguino-clasico para la silueta que se llena
   ui/Vessel.tsx         Recipiente arrastrable para cargar una bebida
@@ -90,19 +90,19 @@ Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componen
 ## Tema (`src/theme.ts`)
 
 - `C` colores, `F` nombres de fuentes (Fredoka para títulos, Nunito para texto).
-- `DRINKS`: `amargo`, `dulce`, `terere`, `cocido`, `agua` — cada uno con `color`, `ink`, `tint`, `shape` (`gourd` mate / `glass` vaso / `mug` taza) y texto.
+- `DRINKS`: 10 bebidas — `amargo`, `dulce`, `cafe` (mate con café), `naranja` (con cáscara de naranja), `hierbas` (menta, peperina, cedrón), `terere`, `jugo` (tereré con jugo), `cocido`, `leche` (cocido con leche), `agua` — cada una con `color`, `ink`, `tint`, `shape` (`gourd` mate / `glass` vaso / `mug` taza), `serve` (`termo` / `jarra` / `taza` / `vaso`, que define las cantidades en `Vessel`) y texto. Las variantes tienen un detalle en el ícono de Home (`Garnish`).
 - `YERBATERAS`: 20 empresas y sus **26 marcas** argentinas (Playadito, Las Marías → Taragüí/Unión/La Merced/Mañanita, CBSé, Amanda, Verdeflor, Rosamonte, Nobleza Gaucha, Cruz de Malta, Aguantadora, Pampa, Sinceridad, La Tranquera, Piporé, Andresito, Cachamate, Romance, Primicia, Buen Día, La Hoja, Más Sabor, La Cumbrecita, Natura, Mate Rojo). `MARCAS` es la lista plana con ids slug. Los paquetes se dibujan genéricos (`PackTile`), **sin logos reales**.
 - `FREE_CATAS = 3`: las primeras 3 catas son gratis, el resto pide Pro.
 
 ## Pantallas
 
-1. **Inicio (`Scene.tsx`, id `pool`)** — un **mate visto desde arriba** sobre una cama de **yerba**, con red de luz y ondas como una pileta, rodeado por una **ronda de mateada**: 4 Fueguinos y 2 de cada personaje (carpintero, castor, trucha, albatros), alternados sin dos iguales al lado, de 3 tamaños, desparejos, algunos cortados por el borde, la fila de abajo sentada sobre el botón. Al inclinar el teléfono el mate se desliza:
+1. **Inicio (`Scene.tsx`, id `pool`)** — un **mate visto desde arriba** sobre una cama de **yerba**, con red de luz y ondas como una pileta, rodeado por una **ronda de mateada**: 4 Fueguinos y 2 de cada personaje (carpintero, castor, trucha, león marino), alternados sin dos iguales al lado, de 3 tamaños, desparejos, algunos cortados por el borde, la fila de abajo sentada sobre el botón. Al inclinar el teléfono el mate se desliza:
    - Sensor de orientación de Reanimated (gravedad hacia abajo en ambas plataformas). `pitch = atan2(-gz,-gy)`, `roll = atan2(gx, hypot(gy,gz))`.
    - Todo corre en `useFrameCallback` (hilo UI): zona muerta de 3° con entrada suave, el "nivel cero" sigue la mano (τ≈3.3 s), arrastre de la yerba, rebote contra los bordes de la pantalla según el contorno del mate (calabaza + bombilla, `MATE_OUTLINE`) y contra el cuerpo de cada pingüino (un círculo por pingüino; chocan la boca del mate y dos puntos de la bombilla), resorte de aplastamiento, giro de hasta 30° sobre el centro de la boca, ondas al moverse. Al chocar, los pingüinos cercanos saltan en ola desde el punto del golpe.
    - En web usa `DeviceOrientationEvent` (en iOS Safari pide permiso al tocar el botón).
    - Botón **"Inicio"** → pide permiso web y va a `intro`.
 2. **Intro** tiene el selector de idioma (🇦🇷 Español · 🇧🇷 Português · 🇺🇸 English); cambia el título y el botón. **Intro, Primer (primer mate), Recordatorios, Meta, Beneficios, Calculo, Pro** — onboarding animado (pingüino que flota con `Bob`, botones con `Pulse`). En Meta cruza la pantalla **Fueguino con sombrero** (`FUEGUINO_SOMBRERO`), sobre un fondo de mates flotando; las opciones se mueven para invitar a tocarlas. Pro tiene tarjetas de planes; los precios son placeholders `[PRECIO]`.
-3. **Home** — total del día en grande, silueta gris de Fueguino que se **llena con capas de color** (una por bebida, la última crece animada con superficie ondulada). Fila de bebidas: al tocar una se abre `Vessel` (arrastrás para elegir cantidad; botones y máximo según la bebida en `SIZES`: mates por termo —medio termo 500, termo 1 L, termo grande 1,5 L—, tereré hasta jarra de 2 L, cocido por taza, agua por vaso/botella; hielo en tereré). Aparece un "+N". Al llegar a la meta aparece **Fueguino bailando** (`FUEGUINO_BAILE`) tapando la silueta. Debajo, tarjetas de desafíos: "Ruta de la yerba" (activa) y dos "PRONTO".
+3. **Home** — total del día en grande, silueta gris de Fueguino que se **llena con capas de color** (una por bebida, la última crece animada con superficie ondulada). Fila de bebidas: al tocar una se abre `Vessel` (arrastrás para elegir cantidad; botones y máximo según dónde se sirve (`SIZES[serve]`): termo —medio termo 500, termo 1 L, termo grande 1,5 L—, jarra hasta 2 L con hielo, taza, vaso/botella). Aparece un "+N". Al llegar a la meta la silueta se desvanece y entra **Fueguino bailando** (`FUEGUINO_BAILE`, precargado con `useImage`) con la cinta "¡Meta cumplida!", que tapa el borde de arriba del video. Debajo, tarjetas de desafíos, cada una con un personaje: "Ruta de la yerba" (activa, león marino), "Último mate a las 18" (carpintero) y "Semana de tereré" (trucha), las dos últimas "PRONTO".
 4. **Yerbas**
    - *Desafío*: camino de catas, 3 gratis.
    - *Catálogo*: buscador, filtros, candados y hoja de paywall.
