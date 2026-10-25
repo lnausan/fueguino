@@ -13,6 +13,7 @@ Publicada para pruebas en GitHub Pages: https://lnausan.github.io/fueguino (repo
 - Expo SDK **58** (`expo ~58.0.19`), React Native 0.88, React 19.3, TypeScript 6.
 - `react-native-reanimated 4.7.1` + `react-native-worklets 0.13.0` → animaciones y física en el hilo de UI.
 - `react-native-svg 15.16.0` → todos los dibujos (mates, vasos, siluetas, ondas, cáusticas).
+- `expo-image` (animaciones WebP de Fueguino, componente `Clip` en `ui/kit`).
 - `expo-audio` (efectos de sonido) y `expo-haptics` (vibración), ambos incluidos en Expo Go.
 - `expo-screen-orientation` (bloqueo vertical), `react-native-safe-area-context`, `expo-font` + `@expo-google-fonts/fredoka` y `@expo-google-fonts/nunito`.
 - Web: `react-native-web` + `react-dom`. `app.json` tiene `experiments.baseUrl: "/fueguino"` para Pages.
@@ -41,6 +42,8 @@ app.json                Config Expo (nombre Fueguino, fondo #6c7a36, baseUrl /fu
 assets/
   fueguino-clasico.png  Pingüino mascota (pose clásica) → PENGUIN
   fueguino.png          Pingüino relajado de playa, con gafas → PENGUIN_BEACH (hoy sin uso)
+  videos/               Animaciones de Fueguino (baile, sombrero): .webp animado con transparencia (lo que usa la app),
+                        .webm transparente y -vista.mp4 con fondo (no se usan en la app)
   characters/           Personajes exportados en SVG (carpintero, castor, trucha, albatros)
   sounds/               Efectos WAV: sorbos reales CC0 (sorbo, sorbo1-4; ver CREDITOS.md) y sintetizados (pop, festejo)
   fueguino-sombra.png   Sombra del pingüino de playa (era de la pileta; hoy sin uso)
@@ -98,8 +101,8 @@ Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componen
    - Todo corre en `useFrameCallback` (hilo UI): zona muerta de 3° con entrada suave, el "nivel cero" sigue la mano (τ≈3.3 s), arrastre de la yerba, rebote contra los bordes de la pantalla según el contorno del mate (calabaza + bombilla, `MATE_OUTLINE`) y contra el cuerpo de cada pingüino (un círculo por pingüino; chocan la boca del mate y dos puntos de la bombilla), resorte de aplastamiento, giro de hasta 30° sobre el centro de la boca, ondas al moverse. Al chocar, los pingüinos cercanos saltan en ola desde el punto del golpe.
    - En web usa `DeviceOrientationEvent` (en iOS Safari pide permiso al tocar el botón).
    - Botón **"Inicio"** → pide permiso web y va a `intro`.
-2. **Intro** tiene el selector de idioma (🇦🇷 Español · 🇧🇷 Português · 🇺🇸 English); cambia el título y el botón. **Intro, Primer (primer mate), Recordatorios, Meta, Beneficios, Calculo, Pro** — onboarding animado (pingüino que flota con `Bob`, botones con `Pulse`). Pro tiene tarjetas de planes; los precios son placeholders `[PRECIO]`.
-3. **Home** — total del día en grande, silueta gris de Fueguino que se **llena con capas de color** (una por bebida, la última crece animada con superficie ondulada). Fila de bebidas: al tocar una se abre `Vessel` (arrastrás para elegir cantidad; botones y máximo según la bebida en `SIZES`: mates por termo —medio termo 500, termo 1 L, termo grande 1,5 L—, tereré hasta jarra de 2 L, cocido por taza, agua por vaso/botella; hielo en tereré). Aparece un "+N". Al llegar a la meta aparece el pingüino a color. Debajo, tarjetas de desafíos: "Ruta de la yerba" (activa) y dos "PRONTO".
+2. **Intro** tiene el selector de idioma (🇦🇷 Español · 🇧🇷 Português · 🇺🇸 English); cambia el título y el botón. **Intro, Primer (primer mate), Recordatorios, Meta, Beneficios, Calculo, Pro** — onboarding animado (pingüino que flota con `Bob`, botones con `Pulse`). En Meta cruza la pantalla **Fueguino con sombrero** (`FUEGUINO_SOMBRERO`), sobre un fondo de mates flotando; las opciones se mueven para invitar a tocarlas. Pro tiene tarjetas de planes; los precios son placeholders `[PRECIO]`.
+3. **Home** — total del día en grande, silueta gris de Fueguino que se **llena con capas de color** (una por bebida, la última crece animada con superficie ondulada). Fila de bebidas: al tocar una se abre `Vessel` (arrastrás para elegir cantidad; botones y máximo según la bebida en `SIZES`: mates por termo —medio termo 500, termo 1 L, termo grande 1,5 L—, tereré hasta jarra de 2 L, cocido por taza, agua por vaso/botella; hielo en tereré). Aparece un "+N". Al llegar a la meta aparece **Fueguino bailando** (`FUEGUINO_BAILE`) tapando la silueta. Debajo, tarjetas de desafíos: "Ruta de la yerba" (activa) y dos "PRONTO".
 4. **Yerbas**
    - *Desafío*: camino de catas, 3 gratis.
    - *Catálogo*: buscador, filtros, candados y hoja de paywall.

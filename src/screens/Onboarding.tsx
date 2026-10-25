@@ -6,15 +6,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, DRINKS, F, PENGUIN } from '../theme';
+import { C, DRINKS, F, FUEGUINO_SOMBRERO, PENGUIN } from '../theme';
 import { useStore } from '../store';
 import { LANGS, T } from '../i18n';
 import { haptic, play, tap } from '../sound';
-import { BackIcon, Body, Bob, CheckIcon, CloseIcon, LinkText, MateIcon, Pill, Pulse, RoundBtn, Silhouette, Title, useLoop } from '../ui/kit';
+import { BackIcon, Body, Bob, CheckIcon, Clip, CloseIcon, LinkText, MateIcon, Pill, Pulse, RoundBtn, Silhouette, Title, useLoop } from '../ui/kit';
 import Vessel from '../ui/Vessel';
 
 const Screen = ({ children, bg = C.bg }: { children: React.ReactNode; bg?: string }) => (
-  <View style={{ flex: 1, backgroundColor: bg }}>{children}</View>
+  <View style={{ flex: 1, backgroundColor: bg, overflow: 'hidden' }}>{children}</View>
 );
 
 function Skip({ onPress, light }: { onPress: () => void; light?: boolean }) {
@@ -348,6 +348,8 @@ function Nudge({ index, active, children }: { index: number; active: boolean; ch
   return <Animated.View style={style}>{children}</Animated.View>;
 }
 
+const WALKER = 240; // tamaño de Fueguino con sombrero que cruza la pantalla
+
 export function Meta() {
   const { go, setGoal } = useStore();
   const insets = useSafeAreaInsets();
@@ -362,8 +364,9 @@ export function Meta() {
     const t = swim.value;
     const going = t < 0.5;
     const p = going ? t / 0.5 : (1 - t) / 0.5;
-    const x = -160 + p * (width + 160);
-    return { transform: [{ translateX: x }, { translateY: Math.sin(t * Math.PI * 10) * 8 }, { scaleX: going ? 1 : -1 }, { rotate: '-14deg' }] };
+    const x = -WALKER + p * (width + WALKER);
+    // Fueguino con sombrero cruza la pantalla de un lado al otro, con un rebote suave
+    return { transform: [{ translateX: x }, { translateY: Math.sin(t * Math.PI * 10) * 4 }, { scaleX: going ? 1 : -1 }] };
   });
 
   return (
@@ -373,8 +376,9 @@ export function Meta() {
           <MateGhost size={s} />
         </Bob>
       ))}
-      <Animated.View style={[{ position: 'absolute', top: insets.top + 30 }, swimStyle]}>
-        <Image source={PENGUIN} style={{ width: 140, height: 140 }} />
+      {/* El dibujo ocupa del 22% al 95% del cuadro: así queda entero arriba de "Meta sugerida" */}
+      <Animated.View style={[{ position: 'absolute', top: insets.top + 192 - 0.95 * WALKER }, swimStyle]}>
+        <Clip source={FUEGUINO_SOMBRERO} size={WALKER} />
       </Animated.View>
       <Skip light onPress={() => go('beneficios')} />
 

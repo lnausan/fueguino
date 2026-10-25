@@ -6,6 +6,7 @@ import Animated, {
 import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { C, F, initials } from '../theme';
 import { silhouettePath } from './silhouette';
+import { Image as ExpoImage } from 'expo-image';
 import { tap } from '../sound';
 
 // Envuelve un onPress para que suene el pop y vibre
@@ -28,6 +29,15 @@ export function Bob({ children, amp = 8, ms = 2800, rot = 0, style }: { children
     return { transform: [{ translateY: -amp * a }, { rotate: `${rot * a}deg` }] };
   });
   return <Animated.View style={[style, s]}>{children}</Animated.View>;
+}
+
+/** Animación de Fueguino (WebP animado, en loop). En iPhone usa libwebp: el decodificador de Apple mezcla mal los cuadros. */
+export function Clip({ source, size, style }: { source: number; size: number; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[{ width: size, height: size }, style]} pointerEvents="none">
+      <ExpoImage source={source} style={{ width: size, height: size }} contentFit="contain" autoplay useAppleWebpCodec={false} />
+    </View>
+  );
 }
 
 /** Pulso tipo latido (para botones que invitan a tocarse). */

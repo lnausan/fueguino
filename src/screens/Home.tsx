@@ -3,13 +3,30 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensio
 import Animated, { FadeInDown, FadeOutUp, ZoomIn, Easing, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, DRINKS, DrinkKind, F, PENGUIN } from '../theme';
+import { C, DRINKS, DrinkKind, F, FUEGUINO_BAILE, PENGUIN } from '../theme';
 import { useStore } from '../store';
-import { Bob, MateIcon, RoundBtn, Silhouette, SilLayer } from '../ui/kit';
+import { Bob, Clip, MateIcon, RoundBtn, Silhouette, SilLayer } from '../ui/kit';
 import Vessel from '../ui/Vessel';
 import { haptic, play } from '../sound';
 
 const KINDS: DrinkKind[] = ['amargo', 'dulce', 'terere', 'cocido', 'agua'];
+
+/** Cinta de festejo (con las puntas plegadas) para cuando se cumple la meta. */
+function Banner({ width, text }: { width: number; text: string }) {
+  const h = (width * 46) / 240;
+  return (
+    <View style={{ width, height: h }}>
+      <Svg width={width} height={h} viewBox="0 0 240 46">
+        <Path d="M2 14H36V42H2L13 28Z" fill="#D18F25" stroke={C.ink} strokeWidth={2.5} strokeLinejoin="round" />
+        <Path d="M238 14H204V42H238L227 28Z" fill="#D18F25" stroke={C.ink} strokeWidth={2.5} strokeLinejoin="round" />
+        <Path d="M24 36L36 42V36Z" fill="#9C6A17" />
+        <Path d="M216 36L204 42V36Z" fill="#9C6A17" />
+        <Path d="M24 6Q120 0 216 6V36Q120 30 24 36Z" fill="#F2B544" stroke={C.ink} strokeWidth={2.5} strokeLinejoin="round" />
+      </Svg>
+      <Text style={[styles.banner, { fontSize: h * 0.36, height: h * 0.78, lineHeight: h * 0.78 }]}>{text}</Text>
+    </View>
+  );
+}
 
 function DrinkIcon({ kind }: { kind: DrinkKind }) {
   const k = DRINKS[kind];
@@ -77,9 +94,22 @@ export function Home() {
           {pop && (
             <Animated.Text key={pop.id} entering={ZoomIn} exiting={FadeOutUp.duration(900)} style={[styles.pop, { color: pop.color }]}>{pop.text}</Animated.Text>
           )}
-          <View style={{ marginTop: 6 }}>
+          {/* Aire arriba para que Fueguino, cuando salta bailando, no toque el texto */}
+          <View style={{ marginTop: 28 }}>
             <Silhouette size={size} layers={layers}>
-              {total >= goal && <Animated.Image entering={ZoomIn.springify()} source={PENGUIN} style={[StyleSheet.absoluteFill, { width: size, height: size }]} />}
+              {total >= goal && (
+                // ¡Meta cumplida! Fueguino baila (tapa la silueta llena)
+                <Animated.View entering={ZoomIn.springify()} style={[StyleSheet.absoluteFill, { backgroundColor: C.bg }]}>
+                  {/* Un poco más chico y más abajo: en el salto más alto la cabeza llega al borde del video */}
+                  <Clip source={FUEGUINO_BAILE} size={size * 0.9} style={{ alignSelf: 'center', marginTop: size * 0.1 }} />
+                  {/* La cinta tapa el borde de arriba del video: en el salto, la cabeza pasa por detrás */}
+                  <Animated.View entering={ZoomIn.delay(250).springify()} style={{ position: 'absolute', top: size * 0.1 - 16, left: size * 0.1, right: size * 0.1 }}>
+                    <Bob amp={1.5} ms={2400} rot={2}>
+                      <Banner width={size * 0.8} text="¡Meta cumplida!" />
+                    </Bob>
+                  </Animated.View>
+                </Animated.View>
+              )}
             </Silhouette>
           </View>
         </View>
@@ -137,6 +167,7 @@ export function Home() {
 }
 
 const styles = StyleSheet.create({
+  banner: { position: 'absolute', left: 0, right: 0, top: 0, textAlign: 'center', fontFamily: 'Fredoka_600SemiBold', color: C.ink },
   header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 18 },
   streak: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2BA4B0', borderWidth: 3, borderColor: '#CDEDF0', alignItems: 'center', justifyContent: 'center' },
   total: { fontFamily: 'Fredoka_700Bold', fontSize: 46, color: C.tealBright },

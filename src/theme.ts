@@ -31,6 +31,10 @@ export const F = {
 export const PENGUIN = require('../assets/fueguino-clasico.png');
 export const PENGUIN_BEACH = require('../assets/fueguino.png');
 
+// Animaciones de Fueguino (WebP animado con fondo transparente; en assets/videos también están en MP4/WebM)
+export const FUEGUINO_BAILE = require('../assets/videos/fueguino-baile.webp');
+export const FUEGUINO_SOMBRERO = require('../assets/videos/fueguino-sombrero.webp');
+
 export type DrinkKind = 'amargo' | 'dulce' | 'terere' | 'cocido' | 'agua';
 
 export const DRINKS: Record<DrinkKind, { name: string; short: string; color: string; ink: string; tint: string; shape: 'gourd' | 'glass' | 'mug'; caption: string }> = {
