@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import {
   SensorType,
@@ -7,48 +7,46 @@ import {
   useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Caustics, PoolFloor, WaterTint } from './PoolLayers';
+import { Caustics, YerbaBed, YerbaTint } from './YerbaBed';
 import Ripples, { RIPPLE_COUNT, Ripple, emptyRipples } from './Ripples';
-import { Floater, FloaterShadow } from './Floater';
-import { OUTLINE, OUTLINE_POINTS } from './outline';
+import { MATE_OUTLINE, MATE_OUTLINE_POINTS, Mate, MateShadow } from './Mate';
+import PenguinRing, { Hit, emptyHit, ronda } from './PenguinRing';
 
 // ---------- Ajustes de la física ----------
 const DEAD_ZONE = 3; // grados de temblor de la mano que se ignoran
 const FULL_TILT = 24; // grados (más allá de la zona muerta) para llegar a la fuerza máxima
 const MAX_ACCEL = 720; // px/s² con inclinación máxima
-const WATER_DRAG = 1.6; // resistencia del agua (1/s): acelera suave y frena por inercia
+const YERBA_DRAG = 1.9; // resistencia de la yerba (1/s): acelera suave y frena por inercia
 const LEVEL_FOLLOW = 3.3; // s: el "nivel" sigue la mano (~95% en 10 s)
 const ANGLE_SMOOTH = 0.08; // s: filtro del sensor
 const INPUT_EASE = 0.18; // s: la fuerza entra de forma gradual
-const RESTITUTION = 0.45; // cuánto rebota en las paredes
-const MAX_LEAN = 30; // grados de inclinación máxima al moverse
+const RESTITUTION = 0.4; // cuánto rebota contra los pingüinos y los bordes
+const MAX_LEAN = 30; // grados de giro máximo al moverse
 const BUTTON_H = 58;
 
 export default function Scene({ onStart }: { onStart?: () => void }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const size = Math.round(Math.min(width * 0.52, 230));
-
   const buttonBottom = insets.bottom + 18;
-  const bounds = {
-    left: 8,
-    right: width - 8,
-    top: insets.top + 8,
-    bottom: height - buttonBottom - BUTTON_H - 14,
-  };
+  const buttonTop = height - buttonBottom - BUTTON_H;
+  const bounds = { left: 4, right: width - 4, top: insets.top + 4, bottom: buttonTop - 6 };
+  const size = Math.round(Math.min(width * 0.42, 190));
+
+  // Ronda de pingüinos alrededor de la yerba; sus cuerpos (círculos) frenan al mate
+  const spots = useMemo(() => ronda(width, insets.top * 0.6, buttonTop), [width, insets.top, buttonTop]);
+  const bodies = useMemo(() => spots.flatMap((s) => [s.cx, s.cy, s.r]), [spots]);
 
   const sensor = useAnimatedSensor(SensorType.GRAVITY, { interval: 'auto' });
 
   // Estado de la física (todo vive en el hilo de UI)
   const x = useSharedValue(width / 2);
-  const y = useSharedValue((bounds.top + bounds.bottom) / 2);
+  const y = useSharedValue((bounds.top + bounds.bottom) / 2 - size * 0.25);
   const vx = useSharedValue(0);
   const vy = useSharedValue(0);
   const rot = useSharedValue(0);
   const sx = useSharedValue(1);
   const sy = useSharedValue(1);
   const lean = useSharedValue(0);
-  const speed = useSharedValue(0);
   const clock = useSharedValue(0);
 
   const calibrated = useSharedValue(0);
@@ -71,6 +69,7 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
   const ripples = useSharedValue<Ripple[]>(emptyRipples());
   const rippleNext = useSharedValue(0);
   const rippleAcc = useSharedValue(0);
+  const hit = useSharedValue<Hit>(emptyHit());
 
   // Respaldo para la versión web en el celular (Reanimated no lee sensores en el navegador)
   const webOk = useSharedValue(0);
@@ -167,9 +166,9 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
 
     let ax = axCmd.value;
     let ay = ayCmd.value;
-    let drag = WATER_DRAG;
+    let drag = YERBA_DRAG;
 
-    // ---------- 2. Mantener apretado sobre el agua: se desliza hacia el dedo ----------
+    // ---------- 2. Mantener apretado sobre la yerba: se desliza hacia el dedo ----------
     if (touching.value === 1) {
       const dx = touchX.value - x.value;
       const dy = touchY.value - y.value;
@@ -179,10 +178,10 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
         ax += (dx / dist) * pull;
         ay += (dy / dist) * pull;
       }
-      drag = WATER_DRAG * 1.7;
+      drag = YERBA_DRAG * 1.7;
     }
 
-    // ---------- 3. Movimiento con resistencia del agua ----------
+    // ---------- 3. Movimiento con resistencia de la yerba ----------
     let nvx = (vx.value + ax * dt) * Math.exp(-drag * dt);
     let nvy = (vy.value + ay * dt) * Math.exp(-drag * dt);
     if (Math.abs(ax) < 0.5 && Math.abs(ay) < 0.5 && Math.abs(nvx) < 1.5 && Math.abs(nvy) < 1.5) {
@@ -192,14 +191,14 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
     let nx = x.value + nvx * dt;
     let ny = y.value + nvy * dt;
 
-    // ---------- 4. Bordes: la silueta rotada nunca sale de la pantalla ----------
+    // ---------- 4. Bordes: el mate rotado (con la bombilla) nunca sale de la pantalla ----------
     const ang = (rot.value * Math.PI) / 180;
     const ca = Math.cos(ang);
     const sa = Math.sin(ang);
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
-    for (let i = 0; i < OUTLINE_POINTS; i++) {
-      const ox = OUTLINE[i * 2] * size * sx.value;
-      const oy = OUTLINE[i * 2 + 1] * size * sy.value;
+    for (let i = 0; i < MATE_OUTLINE_POINTS; i++) {
+      const ox = MATE_OUTLINE[i * 2] * size * sx.value;
+      const oy = MATE_OUTLINE[i * 2 + 1] * size * sy.value;
       const rx = ox * ca - oy * sa;
       const ry = ox * sa + oy * ca;
       if (rx < minX) minX = rx;
@@ -207,8 +206,12 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
       if (ry < minY) minY = ry;
       if (ry > maxY) maxY = ry;
     }
-    const impact = (v: number, axis: number) => {
+    const impact = (v: number, axis: number, hx: number, hy: number) => {
       const s = Math.abs(v);
+      if (s > 60) {
+        // Los pingüinos cercanos al golpe dan un saltito, empezando por los más cercanos
+        hit.value = { t: clock.value, s: Math.min(1, (s - 60) / 380), x: hx, y: hy };
+      }
       if (s > 120) {
         const amt = 0.05 * Math.min(1, (s - 120) / 380); // hasta ~5%
         if (axis === 0) {
@@ -222,18 +225,51 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
     };
     if (nx + minX < b.left) {
       nx = b.left - minX;
-      if (nvx < 0) { impact(nvx, 0); nvx = -nvx * RESTITUTION; }
+      if (nvx < 0) { impact(nvx, 0, b.left, ny); nvx = -nvx * RESTITUTION; }
     } else if (nx + maxX > b.right) {
       nx = b.right - maxX;
-      if (nvx > 0) { impact(nvx, 0); nvx = -nvx * RESTITUTION; }
+      if (nvx > 0) { impact(nvx, 0, b.right, ny); nvx = -nvx * RESTITUTION; }
     }
     if (ny + minY < b.top) {
       ny = b.top - minY;
-      if (nvy < 0) { impact(nvy, 1); nvy = -nvy * RESTITUTION; }
+      if (nvy < 0) { impact(nvy, 1, nx, b.top); nvy = -nvy * RESTITUTION; }
     } else if (ny + maxY > b.bottom) {
       ny = b.bottom - maxY;
-      if (nvy > 0) { impact(nvy, 1); nvy = -nvy * RESTITUTION; }
+      if (nvy > 0) { impact(nvy, 1, nx, b.bottom); nvy = -nvy * RESTITUTION; }
     }
+
+    // ---------- 4b. Pingüinos: la calabaza y la bombilla rebotan contra sus cuerpos ----------
+    const R = (size / 2) * (sx.value + sy.value) / 2;
+    for (let i = 0; i < bodies.length; i += 3) {
+      const px = bodies[i];
+      const py = bodies[i + 1];
+      const pr = bodies[i + 2];
+      // Tres puntos del mate: el centro de la boca (con su radio), la mitad y la punta de la bombilla
+      for (let k = 0; k < 3; k++) {
+        const off = k === 0 ? 0 : k === 1 ? 0.6 * size : 0.92 * size;
+        const qx = nx - off * sa;
+        const qy = ny + off * ca;
+        const reach = (k === 0 ? R : 0.05 * size) + pr;
+        const dx = qx - px;
+        const dy = qy - py;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d >= reach || d < 0.001) continue;
+        const ux = dx / d;
+        const uy = dy / d;
+        nx += ux * (reach - d);
+        ny += uy * (reach - d);
+        const vn = nvx * ux + nvy * uy;
+        if (vn < 0) {
+          impact(vn, Math.abs(ux) > Math.abs(uy) ? 0 : 1, px, py);
+          nvx -= (1 + RESTITUTION) * vn * ux;
+          nvy -= (1 + RESTITUTION) * vn * uy;
+        }
+      }
+    }
+    // Si un pingüino lo empujó contra el borde, el borde manda
+    nx = Math.max(b.left - minX, Math.min(b.right - maxX, nx));
+    ny = Math.max(b.top - minY, Math.min(b.bottom - maxY, ny));
+
     x.value = nx;
     y.value = ny;
     vx.value = nvx;
@@ -247,14 +283,13 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
     squashYV.value += (-K * squashY.value - C * squashYV.value) * dt;
     squashY.value += squashYV.value * dt;
 
-    // ---------- 6. Flotación e inclinación tipo barco ----------
+    // ---------- 6. Giro al moverse y un vaivén muy leve ----------
     const spd = Math.sqrt(nvx * nvx + nvy * nvy);
-    speed.value = spd;
     const leanTarget = Math.max(-MAX_LEAN, Math.min(MAX_LEAN, (nvx / 380) * MAX_LEAN));
     lean.value = lean.value + (leanTarget - lean.value) * (1 - Math.exp(-dt / 0.35));
-    const sway = 1.6 * Math.sin(t * 1.05) + 0.8 * Math.sin(t * 0.47);
+    const sway = 1.2 * Math.sin(t * 0.9) + 0.6 * Math.sin(t * 0.41);
     rot.value = Math.max(-MAX_LEAN, Math.min(MAX_LEAN, lean.value + sway));
-    const bob = 0.012 * Math.sin(t * 1.6);
+    const bob = 0.006 * Math.sin(t * 1.6);
     sx.value = 1 + bob - squashX.value + 0.5 * squashY.value;
     sy.value = 1 + bob - squashY.value + 0.5 * squashX.value;
 
@@ -266,7 +301,7 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
         rippleAcc.value -= 1;
         const ux = nvx / spd;
         const uy = nvy / spd;
-        const back = size * 0.3;
+        const back = size * 0.45;
         const list = ripples.value.slice();
         const idx = rippleNext.value;
         list[idx] = {
@@ -307,12 +342,13 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
       onResponderRelease={onRelease}
       onResponderTerminate={onRelease}
     >
-      <PoolFloor width={width} height={height} />
-      <FloaterShadow size={size} pose={pose} />
+      <YerbaBed width={width} height={height} />
+      <MateShadow size={size} pose={pose} />
       <Caustics width={width} height={height} clock={clock} />
-      <WaterTint width={width} height={height} />
+      <YerbaTint width={width} height={height} />
       <Ripples width={width} height={height} ripples={ripples} clock={clock} />
-      <Floater size={size} pose={pose} clock={clock} speed={speed} />
+      <PenguinRing spots={spots} clock={clock} hit={hit} />
+      <Mate size={size} pose={pose} />
 
       <Pressable
         accessibilityRole="button"
@@ -329,7 +365,7 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#06304f', overflow: 'hidden' },
+  root: { flex: 1, backgroundColor: '#6c7a36', overflow: 'hidden' },
   button: {
     position: 'absolute',
     left: 20,
@@ -338,11 +374,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#001b30',
+    shadowColor: '#1a2205',
     shadowOpacity: 0.35,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  buttonText: { color: '#0a3a5c', fontSize: 18, fontWeight: '800', letterSpacing: 0.3 },
+  buttonText: { color: '#3a4a12', fontSize: 18, fontWeight: '800', letterSpacing: 0.3 },
 });

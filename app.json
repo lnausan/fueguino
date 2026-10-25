@@ -21,7 +21,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "backgroundColor": "#06304f",
+    "backgroundColor": "#6c7a36",
     "experiments": {
       "baseUrl": "/fueguino"
     }

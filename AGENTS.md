@@ -1,41 +1,114 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# Fueguino — contexto del proyecto
 
-## Expo has changed — do not trust your training data
+App móvil (Expo / React Native) para registrar el **mate** que tomás en el día, al estilo de la app *Waterllama* pero con temática matera y fueguina. La mascota es **Fueguino**, un pingüino de Magallanes. Idioma de la interfaz: español rioplatense (voseo: "tomá", "probá", "elegí").
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
+Publicada para pruebas en GitHub Pages: https://lnausan.github.io/fueguino (repo `lnausan/fueguino`). Cada push a `main` despliega solo (`.github/workflows/deploy-web.yml`).
 
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+> Regla del dueño: en commits, archivos, comentarios o repos **nunca** agregar firmas, co-autorías ni menciones a asistentes de IA. Los commits van a nombre de Leo (`lnausan`).
 
-## Commands
+---
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+## Stack y versiones (no cambiar sin revisar compatibilidad)
+
+- Expo SDK **58** (`expo ~58.0.19`), React Native 0.88, React 19.3, TypeScript 6.
+- `react-native-reanimated 4.7.1` + `react-native-worklets 0.13.0` → animaciones y física en el hilo de UI.
+- `react-native-svg 15.16.0` → todos los dibujos (mates, vasos, siluetas, ondas, cáusticas).
+- `expo-screen-orientation` (bloqueo vertical), `react-native-safe-area-context`, `expo-font` + `@expo-google-fonts/fredoka` y `@expo-google-fonts/nunito`.
+- Web: `react-native-web` + `react-dom`. `app.json` tiene `experiments.baseUrl: "/fueguino"` para Pages.
+- Instalar paquetes con `npx expo install <paquete>` (resuelve la versión compatible con SDK 58).
+- Expo cambia mucho entre versiones: consultar https://docs.expo.dev/versions/v58.0.0/ antes de usar una API.
+
+**NO se usa Expo Router.** La navegación es un router propio en memoria (ver abajo).
+
+## Comandos
 
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+npm install
+npx expo start            # dev server (Expo Go en el celular, misma cuenta Expo en iOS)
+npx expo start --web      # navegador
+npx tsc --noEmit          # chequeo de tipos (correr antes de dar algo por terminado)
+npx expo export -p web    # build estático en dist/ (lo que publica Pages)
 ```
 
-Run lint and typecheck before declaring any task done.
+## Estructura
 
-## Navigation & Routing
+```
+App.tsx                 Carga fuentes, bloquea vertical, Router de pantallas con FadeIn
+index.ts                Entrada
+app.json                Config Expo (nombre Fueguino, fondo #6c7a36, baseUrl /fueguino)
+assets/
+  fueguino-clasico.png  Pingüino mascota (pose clásica) → PENGUIN
+  fueguino.png          Pingüino relajado de playa, con gafas → PENGUIN_BEACH (hoy sin uso)
+  fueguino-sombra.png   Sombra del pingüino de playa (era de la pileta; hoy sin uso)
+src/
+  store.tsx             Estado global (Context) + navegación
+  theme.ts              Colores, fuentes, bebidas, yerbateras/marcas
+  i18n.ts               Idiomas (es / pt / en) y textos traducidos (`T[lang]`)
+  Scene.tsx             Pantalla inicial: mate sobre yerba con física por inclinación
+  YerbaBed.tsx          Fondo de yerba (mosaico SVG de 200 px), red de luz animada (Caustics) y tinte de agua (YerbaTint)
+  yerba.ts              Generador de hojitas y palitos + random con semilla (mulberry32)
+  caustics.ts           Generador de red Voronoi para la red de luz
+  Ripples.tsx           26 ondas en el agua del mate (SVG animado)
+  Mate.tsx              Mate visto desde arriba (calabaza, virola, yerba, bombilla) + sombra + contorno de choque
+  PenguinRing.tsx       Ronda de 12 pingüinos puestos a mano (`RONDA`: posición, tamaño, giro, espejado), con saltito en ola al chocar
+  ui/kit.tsx            Componentes compartidos (botones, íconos, Bob, Pulse, Silhouette…)
+  ui/silhouette.ts      Contorno (80 puntos) de fueguino-clasico para la silueta que se llena
+  ui/Vessel.tsx         Recipiente arrastrable para cargar una bebida
+  screens/Onboarding.tsx  Intro, Primer, Recordatorios, Meta, Beneficios, Calculo, Pro
+  screens/Home.tsx        Pantalla principal
+  screens/Yerbas.tsx      Desafío "Ruta de la yerba": Desafio, Catalogo, Puntuar, Ranking
+```
 
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
+## Navegación y estado (`src/store.tsx`)
 
-## Building with EAS
+`useStore()` expone:
+- `screen`, `go(id)`, `back()` (pila de historial). IDs de pantalla, en orden de flujo:
+  `pool → intro → primer → recordatorios → meta → beneficios → calculo → pro → home`, y desde home: `yerbas → catalogo → puntuar → ranking`.
+- `lang` (`'es' | 'pt' | 'en'`, default `'es'`) + `setLang()`.
+- `unit` (`'ml' | 'oz'`), `goal` (meta diaria, default 1000 ml).
+- `drinks: {kind, amount}[]` + `addDrink()`.
+- `catas: {id, score, attrs, tags, note}[]` + `saveCata()` (reemplaza por id).
+- `selected` (marca elegida, default `'taragui'`) + `select()`.
 
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
+⚠️ Todo vive **en memoria**: al recargar se pierde. Pendiente: persistir con AsyncStorage.
 
-## Rules
+Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componente y registrarlo en el objeto `screens` de `App.tsx`.
 
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+## Tema (`src/theme.ts`)
+
+- `C` colores, `F` nombres de fuentes (Fredoka para títulos, Nunito para texto).
+- `DRINKS`: `amargo`, `dulce`, `terere`, `cocido`, `agua` — cada uno con `color`, `ink`, `tint`, `shape` (`gourd` mate / `glass` vaso / `mug` taza) y texto.
+- `YERBATERAS`: 20 empresas y sus **26 marcas** argentinas (Playadito, Las Marías → Taragüí/Unión/La Merced/Mañanita, CBSé, Amanda, Verdeflor, Rosamonte, Nobleza Gaucha, Cruz de Malta, Aguantadora, Pampa, Sinceridad, La Tranquera, Piporé, Andresito, Cachamate, Romance, Primicia, Buen Día, La Hoja, Más Sabor, La Cumbrecita, Natura, Mate Rojo). `MARCAS` es la lista plana con ids slug. Los paquetes se dibujan genéricos (`PackTile`), **sin logos reales**.
+- `FREE_CATAS = 3`: las primeras 3 catas son gratis, el resto pide Pro.
+
+## Pantallas
+
+1. **Inicio (`Scene.tsx`, id `pool`)** — un **mate visto desde arriba** sobre una cama de **yerba**, con red de luz y ondas como una pileta, rodeado por una **ronda de mateada**: 12 pingüinos de 3 tamaños, desparejos, algunos cortados por el borde, la fila de abajo sentada sobre el botón. Al inclinar el teléfono el mate se desliza:
+   - Sensor de orientación de Reanimated (gravedad hacia abajo en ambas plataformas). `pitch = atan2(-gz,-gy)`, `roll = atan2(gx, hypot(gy,gz))`.
+   - Todo corre en `useFrameCallback` (hilo UI): zona muerta de 3° con entrada suave, el "nivel cero" sigue la mano (τ≈3.3 s), arrastre de la yerba, rebote contra los bordes de la pantalla según el contorno del mate (calabaza + bombilla, `MATE_OUTLINE`) y contra el cuerpo de cada pingüino (un círculo por pingüino; chocan la boca del mate y dos puntos de la bombilla), resorte de aplastamiento, giro de hasta 30° sobre el centro de la boca, ondas al moverse. Al chocar, los pingüinos cercanos saltan en ola desde el punto del golpe.
+   - En web usa `DeviceOrientationEvent` (en iOS Safari pide permiso al tocar el botón).
+   - Botón **"Inicio"** → pide permiso web y va a `intro`.
+2. **Intro** tiene el selector de idioma (🇦🇷 Español · 🇧🇷 Português · 🇺🇸 English); cambia el título y el botón. **Intro, Primer (primer mate), Recordatorios, Meta, Beneficios, Calculo, Pro** — onboarding animado (pingüino que flota con `Bob`, botones con `Pulse`). Pro tiene tarjetas de planes; los precios son placeholders `[PRECIO]`.
+3. **Home** — total del día en grande, silueta gris de Fueguino que se **llena con capas de color** (una por bebida, la última crece animada con superficie ondulada). Fila de bebidas: al tocar una se abre `Vessel` (arrastrás para elegir cantidad; botones y máximo según la bebida en `SIZES`: mates por termo —medio termo 500, termo 1 L, termo grande 1,5 L—, tereré hasta jarra de 2 L, cocido por taza, agua por vaso/botella; hielo en tereré). Aparece un "+N". Al llegar a la meta aparece el pingüino a color. Debajo, tarjetas de desafíos: "Ruta de la yerba" (activa) y dos "PRONTO".
+4. **Yerbas**
+   - *Desafío*: camino de catas, 3 gratis.
+   - *Catálogo*: buscador, filtros, candados y hoja de paywall.
+   - *Puntuar*: 1–5 mates, segmentos de atributos, etiquetas, nota, overlay de guardado.
+   - *Ranking*: podio + lista.
+
+## Convenciones
+
+- Todo lo visual en código (SVG + Reanimated); nada de librerías de UI.
+- Animaciones con worklets / shared values, no `setState` por frame.
+- Textos en español con voseo. Los textos traducidos viven en `src/i18n.ts`.
+- Probar en web y en Expo Go antes de pushear.
+
+## Pendientes / ideas
+
+- Traducir al portugués y al inglés el resto de las pantallas (hoy solo Intro); guardar el idioma elegido.
+
+- Persistencia (AsyncStorage).
+- Sonidos con `expo-audio` (en `assets/sounds/`) y vibración con `expo-haptics`: pop en botones, ruido de yerba al deslizarse el mate, agua vertiéndose en Vessel, sorbo al confirmar, festejo al llegar a la meta. En web el audio recién suena después del primer toque ("Inicio").
+- Silueta del Home más fiel al contorno del pingüino.
+- Verificar el signo de la inclinación en un dispositivo real.
+- Precios reales en Pro, notificaciones reales en Recordatorios.

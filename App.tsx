@@ -45,7 +45,7 @@ export default function App() {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
 
-  if (!loaded) return <View style={{ flex: 1, backgroundColor: '#06304f' }} />;
+  if (!loaded) return <View style={{ flex: 1, backgroundColor: '#6c7a36' }} />;
 
   return (
     <SafeAreaProvider>

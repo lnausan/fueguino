@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing, FadeIn, FadeInDown, FadeInLeft, FadeInRight, FadeInUp, SlideInDown, ZoomIn,
-  useAnimatedStyle, useSharedValue, withSpring, withTiming,
+  cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, DRINKS, F, PENGUIN } from '../theme';
 import { useStore } from '../store';
+import { LANGS, T } from '../i18n';
 import { BackIcon, Body, Bob, CheckIcon, CloseIcon, LinkText, MateIcon, Pill, Pulse, RoundBtn, Silhouette, Title, useLoop } from '../ui/kit';
 import Vessel from '../ui/Vessel';
 
@@ -27,8 +28,30 @@ function Skip({ onPress, light }: { onPress: () => void; light?: boolean }) {
 // ---------------------------------------------------------------- 1 · Intro
 const LAYER_COLORS = ['#3FB6CF', '#6FA236', '#7A4E33', '#E3A13B'];
 
+function LangPicker() {
+  const { lang, setLang } = useStore();
+  return (
+    <View style={styles.langRow} accessibilityRole="radiogroup">
+      {LANGS.map((l) => {
+        const on = l.id === lang;
+        return (
+          <Pressable
+            key={l.id}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            onPress={() => setLang(l.id)}
+            style={({ pressed }) => [styles.langChip, on && styles.langChipOn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+          >
+            <Text style={[styles.langText, on && { color: C.ink }]}>{l.flag} {l.name}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function Intro() {
-  const { go } = useStore();
+  const { go, lang } = useStore();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const size = Math.min(width - 80, 300);
@@ -66,7 +89,7 @@ export function Intro() {
     <Screen>
       <View style={{ alignItems: 'center', paddingTop: insets.top + 40 }}>
         <Animated.View key={iconIdx} entering={ZoomIn.springify()} style={{ height: 56 }}>{icons[Math.min(iconIdx, 4)]}</Animated.View>
-        <Title style={{ marginTop: 14, paddingHorizontal: 24 }}>Llevá la cuenta de tus mates</Title>
+        <Title style={{ marginTop: 14, paddingHorizontal: 24 }}>{T[lang].introTitle}</Title>
         <View style={{ marginTop: 28 }}>
           <Silhouette size={size} layers={g.map((v, i) => ({ color: LAYER_COLORS[i], from: i * 0.25, to: i * 0.25 + 0.27, grow: v }))}>
             <Animated.Image source={PENGUIN} style={[StyleSheet.absoluteFill, { width: size, height: size }, fullStyle]} />
@@ -74,9 +97,9 @@ export function Intro() {
         </View>
         <Text style={{ fontFamily: F.title, fontSize: 30, color: step >= 5 ? '#6B3F22' : '#B7AC9C', marginTop: 10 }}>Fueguino</Text>
       </View>
-      <Animated.View entering={FadeInUp.delay(400)} style={[styles.bottomRow, { bottom: insets.bottom + 40 }]}>
-        <Text style={{ fontFamily: F.heavy, color: C.muted }}>🇦🇷 ES</Text>
-        <Pill label="EMPEZAR" onPress={() => go('primer')} />
+      <Animated.View entering={FadeInUp.delay(400)} style={[styles.introBottom, { bottom: insets.bottom + 32 }]}>
+        <LangPicker />
+        <Pill label={T[lang].start} onPress={() => go('primer')} />
       </Animated.View>
     </Screen>
   );
@@ -93,7 +116,7 @@ export function Primer() {
   const grow = useSharedValue(0);
 
   const done = stage === 'done';
-  const fill = Math.max(0.08, amount / goal);
+  const fill = Math.min(1.04, Math.max(0.08, amount / goal));
 
   return (
     <Screen>
@@ -250,11 +273,85 @@ const META_ROWS = [
   { key: 'clima', label: 'Clima', opts: ['Frío fueguino', 'Templado', 'Calor (¡tereré!)'], add: [0, 0, 250] },
 ];
 
+/** Silueta de mate (calabaza + bombilla) en blanco translúcido, para el fondo. */
+const MateGhost = ({ size }: { size: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 64 64">
+    <Path d="M13 25 C4 42 14 61 32 61 C50 61 60 42 51 25 Z" fill="#fff" fillOpacity={0.16} />
+    <Ellipse cx={32} cy={25} rx={19} ry={5.5} fill="#fff" fillOpacity={0.1} stroke="#fff" strokeOpacity={0.32} strokeWidth={3} />
+    <Path d="M42 3 L36 27" stroke="#fff" strokeOpacity={0.32} strokeWidth={4} strokeLinecap="round" />
+  </Svg>
+);
+
+// Ícono de cada opción de la meta (líneas blancas, en el mismo estilo que los mates del fondo)
+const SUN_RAYS = 'M12 2.5V4.5M12 19.5V21.5M2.5 12H4.5M19.5 12H21.5M5.3 5.3L6.7 6.7M17.3 17.3L18.7 18.7M5.3 18.7L6.7 17.3M17.3 6.7L18.7 5.3';
+const BOLT = 'M13 3L6 13H11L10 21L18 10H13Z';
+const META_ICONS: Record<string, string[][]> = {
+  exp: [
+    ['M12 21V11', 'M12 13C12 8.5 8.5 6 4 6C4 10 7 13 12 13', 'M12 11C12 7 15 5 20 5C20 9 17 11 12 11'],
+    ['M6 10C4 16 7 21 12 21C17 21 20 16 18 10Z', 'M6 10C6 11.2 18 11.2 18 10C18 8.8 6 8.8 6 10Z', 'M16 3L13.5 10'],
+    ['M12 3L14.6 8.6L20.6 9.2L16 13.2L17.4 19.2L12 16L6.6 19.2L8 13.2L3.4 9.2L9.4 8.6Z'],
+  ],
+  hora: [
+    ['M3 19H21', 'M7 19A5 5 0 0 1 17 19', 'M12 11V4M9.5 6.5L12 4L14.5 6.5'],
+    ['M12 8A4 4 0 1 0 12.01 8Z', SUN_RAYS],
+    ['M3 19H21', 'M7 19A5 5 0 0 1 17 19', 'M12 4V11M9.5 8.5L12 11L14.5 8.5'],
+  ],
+  caf: [[BOLT, 'M4 4L20 20'], [BOLT]],
+  clima: [
+    ['M12 3V21M4.2 7.5L19.8 16.5M4.2 16.5L19.8 7.5', 'M9.5 4.5L12 6L14.5 4.5M9.5 19.5L12 18L14.5 19.5'],
+    ['M9 4.5V3M4.5 9H3M5.8 5.8L4.8 4.8M13.2 5.8L14.2 4.8', 'M6.2 11A3.5 3.5 0 0 1 12.5 8', 'M7 20H17A3.5 3.5 0 0 0 16.5 13A5 5 0 0 0 7.2 14.2A3 3 0 0 0 7 20Z'],
+    ['M10 14V5A2 2 0 0 1 14 5V14A4 4 0 1 1 10 14Z', 'M12 17V9'],
+  ],
+};
+
+function MetaIcon({ row, opt }: { row: string; opt: number }) {
+  return (
+    <Animated.View key={opt} entering={ZoomIn.springify()} style={styles.metaIcon} pointerEvents="none">
+      <Svg width={30} height={30} viewBox="0 0 24 24">
+        {META_ICONS[row][opt].map((d, i) => (
+          <Path key={i} d={d} fill="none" stroke="#fff" strokeOpacity={0.85} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        ))}
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Saltito con bamboleo cada pocos segundos, en ola según `index`, para invitar a tocar. */
+function Nudge({ index, active, children }: { index: number; active: boolean; children: React.ReactNode }) {
+  const v = useSharedValue(0);
+  useEffect(() => {
+    if (!active) {
+      cancelAnimation(v);
+      v.value = withTiming(0, { duration: 150 });
+      return;
+    }
+    v.value = withDelay(
+      900 + index * 160,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) }),
+          withTiming(-0.6, { duration: 170 }),
+          withTiming(0.3, { duration: 150 }),
+          withTiming(0, { duration: 150 }),
+          withDelay(2600, withTiming(0, { duration: 0 })),
+        ),
+        -1,
+      ),
+    );
+    return () => cancelAnimation(v);
+  }, [active]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + 0.05 * Math.abs(v.value) }, { rotate: `${2.5 * v.value}deg` }],
+  }));
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 export function Meta() {
   const { go, setGoal } = useStore();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [sel, setSel] = useState<Record<string, number>>({ exp: 1, hora: 0, caf: 1, clima: 0 });
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const goal = Math.max(500, 1000 + META_ROWS.reduce((a, r) => a + r.add[sel[r.key]], 0));
   useEffect(() => setGoal(goal), [goal]);
 
@@ -271,7 +368,7 @@ export function Meta() {
     <Screen bg={C.sea}>
       {[[-20, 300, 70], [width - 70, 230, 90], [width - 60, 620, 60], [-26, 640, 84], [40, 760, 46], [width - 110, 60, 50]].map(([l, t, s], k) => (
         <Bob key={k} amp={10} ms={6000 + k * 700} rot={6} style={{ position: 'absolute', left: l, top: t }}>
-          <View style={{ width: s, height: s * 0.78, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.16)' }} />
+          <MateGhost size={s} />
         </Bob>
       ))}
       <Animated.View style={[{ position: 'absolute', top: insets.top + 30 }, swimStyle]}>
@@ -291,10 +388,19 @@ export function Meta() {
       <View style={{ paddingHorizontal: 40, marginTop: 26, gap: 10 }}>
         {META_ROWS.map((r, k) => (
           <Animated.View key={r.key} entering={FadeInDown.delay(300 + k * 80)}>
-            <Pressable onPress={() => setSel((s) => ({ ...s, [r.key]: (s[r.key] + 1) % r.opts.length }))} style={({ pressed }) => [styles.metaRow, { opacity: pressed ? 0.8 : 1 }]}>
-              <Text style={{ fontFamily: F.heavy, fontSize: 12, color: '#fff' }}>{r.label}</Text>
-              <Text style={{ fontFamily: F.black, fontSize: 16, color: '#fff' }}>{r.opts[sel[r.key]]}</Text>
-            </Pressable>
+            <Nudge index={k} active={!touched[r.key]}>
+              <Pressable
+                onPress={() => {
+                  setSel((s) => ({ ...s, [r.key]: (s[r.key] + 1) % r.opts.length }));
+                  setTouched((t) => ({ ...t, [r.key]: true }));
+                }}
+                style={({ pressed }) => [styles.metaRow, { opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={{ fontFamily: F.heavy, fontSize: 12, color: '#fff' }}>{r.label}</Text>
+                <Text style={{ fontFamily: F.black, fontSize: 16, color: '#fff' }}>{r.opts[sel[r.key]]}</Text>
+                <MetaIcon row={r.key} opt={sel[r.key]} />
+              </Pressable>
+            </Nudge>
           </Animated.View>
         ))}
       </View>
@@ -486,6 +592,11 @@ export function Pro() {
 
 export const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  introBottom: { position: 'absolute', left: 16, right: 16, alignItems: 'center', gap: 16 },
+  langRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
+  langChip: { paddingHorizontal: 12, height: 36, borderRadius: 18, borderWidth: 2, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  langChipOn: { borderColor: C.ink, backgroundColor: C.cream },
+  langText: { fontFamily: F.heavy, fontSize: 13, color: C.muted },
   bottomRow: { position: 'absolute', left: 24, right: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
   mateBtn: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#E9F2DA', alignItems: 'center', justifyContent: 'center' },
   toast: { position: 'absolute', alignSelf: 'center', backgroundColor: C.teal, borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
@@ -496,7 +607,8 @@ export const styles = StyleSheet.create({
   avatar: { width: 32, height: 32, borderRadius: 9, backgroundColor: C.teal, overflow: 'hidden', alignItems: 'center', justifyContent: 'flex-end' },
   alert: { width: 280, borderRadius: 18, backgroundColor: '#F4F1EC', overflow: 'hidden' },
   alertBtn: { flex: 1, height: 46, alignItems: 'center', justifyContent: 'center' },
-  metaRow: { height: 54, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.16)', paddingHorizontal: 20, justifyContent: 'center' },
+  metaRow: { height: 54, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.16)', paddingHorizontal: 20, paddingRight: 60, justifyContent: 'center' },
+  metaIcon: { position: 'absolute', right: 18, top: 12 },
   benefit: { height: 460, borderRadius: 26, padding: 14, overflow: 'hidden' },
   benTitle: { fontFamily: F.title, fontSize: 19, marginBottom: 4 },
   benItem: { fontFamily: F.body, fontSize: 13, lineHeight: 17, marginTop: 8 },

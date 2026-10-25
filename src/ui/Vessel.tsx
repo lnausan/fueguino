@@ -9,7 +9,15 @@ const W = 220;
 const H = 250;
 const TOP = 52; // nivel lleno
 const BOTTOM = 236; // nivel vacío
-const MAX = 500;
+
+// Cantidades por bebida: el mate y el tereré se toman de un termo, el cocido en taza, el agua en vaso o botella.
+const SIZES: Record<DrinkKind, { max: number; step: number; start: number; chips: { ml: number; label: string }[] }> = {
+  amargo: { max: 1500, step: 50, start: 500, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 1500, label: 'Termo grande' }] },
+  dulce: { max: 1500, step: 50, start: 500, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 1500, label: 'Termo grande' }] },
+  terere: { max: 2000, step: 50, start: 1000, chips: [{ ml: 500, label: 'Medio termo' }, { ml: 1000, label: 'Termo' }, { ml: 2000, label: 'Jarra' }] },
+  cocido: { max: 600, step: 10, start: 250, chips: [{ ml: 200, label: 'Taza' }, { ml: 300, label: 'Tazón' }, { ml: 450, label: 'Jarro' }] },
+  agua: { max: 1000, step: 10, start: 250, chips: [{ ml: 250, label: 'Vaso' }, { ml: 500, label: 'Botella' }, { ml: 1000, label: 'Botella de 1 L' }] },
+};
 const AnimatedG = Animated.createAnimatedComponent(G);
 
 const GOURD = 'M30 40 C14 140 50 240 110 240 C170 240 206 140 190 40 Z';
@@ -18,13 +26,14 @@ const GLASS = 'M28 34 L192 34 L174 236 Q172 246 162 246 L58 246 Q48 246 46 236 Z
 /** Recipiente con el nivel arrastrable con el dedo. */
 export default function Vessel({ kind, unit, onAdd, onClose }: { kind: DrinkKind; unit: 'ml' | 'oz'; onAdd: (ml: number) => void; onClose: () => void }) {
   const k = DRINKS[kind];
-  const [amount, setAmount] = useState(250);
-  const level = useSharedValue(250 / MAX);
+  const { max: MAX, step, start, chips } = SIZES[kind];
+  const [amount, setAmount] = useState(start);
+  const level = useSharedValue(start / MAX);
   const wave = useLoop(1600);
 
   const setFromY = (yLocal: number) => {
     const p = Math.max(0, Math.min(1, (BOTTOM - yLocal) / (BOTTOM - TOP)));
-    const ml = Math.max(10, Math.round((p * MAX) / 10) * 10);
+    const ml = Math.max(step, Math.round((p * MAX) / step) * step);
     level.value = ml / MAX;
     setAmount(ml);
   };
@@ -79,12 +88,13 @@ export default function Vessel({ kind, unit, onAdd, onClose }: { kind: DrinkKind
           </Animated.View>
         </View>
 
-        <Text style={styles.amount}>{conv(amount)}<Text style={{ fontSize: 22 }}> {unit}</Text></Text>
+        <Text style={styles.amount}>{conv(amount).toLocaleString('es-AR')}<Text style={{ fontSize: 22 }}> {unit}</Text></Text>
         <Text style={styles.caption}>{k.caption}</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-          {[150, 250, 350].map((ml) => (
+          {chips.map(({ ml, label }) => (
             <Pressable key={ml} onPress={() => pick(ml)} style={[styles.chip, { backgroundColor: amount === ml ? k.tint : C.sand }]}>
-              <Text style={{ fontFamily: F.heavy, fontSize: 14, color: amount === ml ? k.ink : '#4A423C' }}>{conv(ml)} {unit}</Text>
+              <Text style={{ fontFamily: F.heavy, fontSize: 13, color: amount === ml ? k.ink : '#4A423C' }}>{label}</Text>
+              <Text style={{ fontFamily: F.body, fontSize: 12, color: amount === ml ? k.ink : C.soft }}>{conv(ml).toLocaleString('es-AR')} {unit}</Text>
             </Pressable>
           ))}
         </View>
@@ -106,7 +116,7 @@ const styles = StyleSheet.create({
   handle: { position: 'absolute', left: W / 2 - 17, top: 0, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.88)', alignItems: 'center', justifyContent: 'center' },
   amount: { fontFamily: F.title, fontSize: 44, color: C.ink, marginTop: 22 },
   caption: { fontFamily: F.body, fontSize: 14, color: C.muted, marginTop: 4 },
-  chip: { height: 40, paddingHorizontal: 16, borderRadius: 999, justifyContent: 'center' },
+  chip: { minHeight: 48, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   bottom: { position: 'absolute', left: 24, right: 24, bottom: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   add: { height: 56, paddingHorizontal: 40, borderRadius: 999, justifyContent: 'center' },
 });

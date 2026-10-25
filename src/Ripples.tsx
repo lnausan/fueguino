@@ -13,7 +13,7 @@ export const emptyRipples = (): Ripple[] =>
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const EMPTY = 'M0 0';
 
-/** Anillo levemente ondulado (no un círculo perfecto, para que parezca agua y no un radar). */
+/** Anillo levemente ondulado (no un círculo perfecto, para que parezca líquido y no un radar). */
 function wavyRing(cx: number, cy: number, r: number, amp: number, phase: number): string {
   'worklet';
   const n = 40;
@@ -64,8 +64,8 @@ function RippleSlot({ index, ripples, clock }: { index: number; ripples: SharedV
   });
   return (
     <>
-      <AnimatedPath animatedProps={bandProps} fill="none" stroke="#021f38" strokeLinejoin="round" />
-      <AnimatedPath animatedProps={rimProps} fill="none" stroke="#f2fdff" strokeLinejoin="round" />
+      <AnimatedPath animatedProps={bandProps} fill="none" stroke="#1a2205" strokeLinejoin="round" />
+      <AnimatedPath animatedProps={rimProps} fill="none" stroke="#f7f3cf" strokeLinejoin="round" />
     </>
   );
 }

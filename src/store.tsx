@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { DrinkKind } from './theme';
+import { Lang } from './i18n';
 
 export type Screen =
   | 'pool' | 'intro' | 'primer' | 'recordatorios' | 'meta' | 'beneficios' | 'calculo' | 'pro'
@@ -12,6 +13,8 @@ type Store = {
   screen: Screen;
   go: (s: Screen) => void;
   back: () => void;
+  lang: Lang;
+  setLang: (l: Lang) => void;
   unit: 'ml' | 'oz';
   setUnit: (u: 'ml' | 'oz') => void;
   goal: number;
@@ -28,6 +31,7 @@ const Ctx = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<Screen[]>(['pool']);
+  const [lang, setLang] = useState<Lang>('es');
   const [unit, setUnit] = useState<'ml' | 'oz'>('ml');
   const [goal, setGoal] = useState(1000);
   const [drinks, setDrinks] = useState<Drink[]>([]);
@@ -39,14 +43,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       screen: history[history.length - 1],
       go: (s) => setHistory((h) => [...h, s]),
       back: () => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h)),
-      unit, setUnit, goal, setGoal,
+      lang, setLang, unit, setUnit, goal, setGoal,
       drinks,
       addDrink: (d) => setDrinks((x) => [...x, d]),
       catas,
       saveCata: (c) => setCatas((x) => [...x.filter((y) => y.id !== c.id), c]),
       selected, select,
     }),
-    [history, unit, goal, drinks, catas, selected],
+    [history, lang, unit, goal, drinks, catas, selected],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

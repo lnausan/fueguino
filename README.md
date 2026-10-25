@@ -1,8 +1,9 @@
 # Fueguino · Pantalla inicial (Expo SDK 58 + Expo Go)
 
-Piscina vista desde arriba con Fueguino flotando. Se mueve inclinando el teléfono
-(sensor de gravedad → pitch/roll calibrados), con resistencia del agua, rebotes,
-aplastamiento al chocar, inclinación tipo barco, ondas y espuma.
+Un mate visto desde arriba sobre una cama de yerba, rodeado de pingüinos Fueguino.
+Se mueve inclinando el teléfono (sensor de gravedad → pitch/roll calibrados), con
+resistencia de la yerba, rebotes contra los pingüinos (que saltan al golpe),
+aplastamiento al chocar, giro, red de luz y ondas como en una pileta.
 
 ## Cómo abrirlo en tu teléfono
 
@@ -24,8 +25,8 @@ Si la Wi-Fi no deja conectar (redes de oficina o institucionales), usá `npx exp
 
 ## Probar en la computadora
 
-`npx expo start` y apretá `w`: se abre en el navegador. Mantené apretado el clic sobre el agua
-y Fueguino se desliza hacia el puntero (en la compu no hay sensor de inclinación).
+`npx expo start` y apretá `w`: se abre en el navegador. Mantené apretado el clic sobre la yerba
+y el mate se desliza hacia el puntero (en la compu no hay sensor de inclinación).
 
 ## Versión web publicada (GitHub Pages)
 
@@ -40,7 +41,8 @@ Cada `push` a la rama `main` publica la versión web automáticamente
 ## Dónde está cada cosa
 
 - `src/Scene.tsx`: física (inclinación, calibración, zona muerta, arrastre, rebotes, aplastamiento, giro) y ondas.
-- `src/PoolLayers.tsx`: fondo, azulejos, red de luz (cáusticas) y tinte del agua.
+- `src/YerbaBed.tsx` y `src/yerba.ts`: fondo de yerba (hojitas y palitos), red de luz (cáusticas, `src/caustics.ts`) y tinte del agua.
 - `src/Ripples.tsx`: ondas onduladas con borde brillante y franja oscura.
-- `src/Floater.tsx`: personaje, sombra y espuma.
+- `src/Mate.tsx`: el mate visto desde arriba, su sombra y su contorno para los choques.
+- `src/PenguinRing.tsx`: la ronda de pingüinos (dónde va cada uno, en `RONDA`) y sus saltitos.
 - Los ajustes de la física están al principio de `src/Scene.tsx` (fuerza, resistencia, rebote, etc.).
