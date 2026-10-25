@@ -42,7 +42,7 @@ assets/
   fueguino-clasico.png  Pingüino mascota (pose clásica) → PENGUIN
   fueguino.png          Pingüino relajado de playa, con gafas → PENGUIN_BEACH (hoy sin uso)
   characters/           Personajes exportados en SVG (carpintero, castor, trucha, albatros)
-  sounds/               Efectos WAV: sorbos reales CC0 (sorbo, sorbo1-4; ver CREDITOS.md) y sintetizados (pop, toc, deslizar, festejo)
+  sounds/               Efectos WAV: sorbos reales CC0 (sorbo, sorbo1-4; ver CREDITOS.md) y sintetizados (pop, festejo)
   fueguino-sombra.png   Sombra del pingüino de playa (era de la pileta; hoy sin uso)
 src/
   store.tsx             Estado global (Context) + navegación
@@ -108,8 +108,8 @@ Para agregar una pantalla: sumar el id al tipo en `store.tsx`, crear el componen
 
 ## Sonido y vibración (`src/sound.ts`)
 
-- Botones de `ui/kit` (Pill, LinkText, RoundBtn), selector de idioma y filas de la Meta: **pop** + vibración cortita (`tap()`).
-- Inicio: **toc** al chocar el mate (volumen y vibración según la fuerza; la física avisa con `scheduleOnRN`, máx. uno cada 90 ms) y **deslizar** en loop con volumen según la velocidad.
+- Botones de `ui/kit` (Pill, LinkText, RoundBtn; el botón Inicio no suena), selector de idioma y filas de la Meta: **pop** + vibración cortita (`tap()`).
+- Inicio: **sin sonido** (en el celular no queda bien); solo vibra al chocar el mate, según la fuerza (la física avisa con `scheduleOnRN`, máx. una cada 90 ms).
 - Vessel: **sorbos** reales de bombilla (`sip()`, 4 variantes al azar, uno cada 420 ms) mientras sube el nivel o al tocar un chip, tic de vibración cada 100 ml, **sorbo** al confirmar.
 - **Festejo** + vibración de éxito al cebar el primer mate y al llegar a la meta en Home.
 - Respetan el modo silencio del celular (`playsInSilentMode: false`) y se mezclan con la música. En web suenan recién después del primer toque.

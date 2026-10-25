@@ -7,8 +7,6 @@ import { Platform } from 'react-native';
 
 const SOURCES = {
   pop: require('../assets/sounds/pop.wav'),
-  toc: require('../assets/sounds/toc.wav'),
-  deslizar: require('../assets/sounds/deslizar.wav'),
   sorbo: require('../assets/sounds/sorbo.wav'),
   sorbo1: require('../assets/sounds/sorbo1.wav'),
   sorbo2: require('../assets/sounds/sorbo2.wav'),
@@ -44,42 +42,6 @@ export function play(name: Sfx, volume = 1) {
     p.seekTo(0).catch(() => {});
     p.play();
   } catch {}
-}
-
-const ramps: Partial<Record<Sfx, ReturnType<typeof setInterval>>> = {};
-
-/** Sonido en loop: lleva el volumen a `volume` de a poco (en `ms`), sin cortes bruscos. 0 lo pausa al final. */
-export function loopVolume(name: Sfx, volume: number, ms = 140) {
-  const p = player(name);
-  if (!p) return;
-  const target = Math.max(0, Math.min(1, volume));
-  try {
-    p.loop = true;
-    if (target > 0.01 && !p.playing) {
-      p.volume = 0;
-      p.play();
-    }
-  } catch {
-    return;
-  }
-  const from = p.volume;
-  const steps = Math.max(1, Math.round(ms / 20));
-  let k = 0;
-  if (ramps[name]) clearInterval(ramps[name]);
-  ramps[name] = setInterval(() => {
-    k++;
-    try {
-      p.volume = from + ((target - from) * k) / steps;
-      if (k >= steps) {
-        clearInterval(ramps[name]);
-        delete ramps[name];
-        if (target <= 0.01 && p.playing) p.pause();
-      }
-    } catch {
-      clearInterval(ramps[name]);
-      delete ramps[name];
-    }
-  }, 20);
 }
 
 const SIPS: Sfx[] = ['sorbo1', 'sorbo2', 'sorbo3', 'sorbo4'];

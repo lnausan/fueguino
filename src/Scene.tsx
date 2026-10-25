@@ -12,7 +12,7 @@ import { Caustics, YerbaBed, YerbaTint } from './YerbaBed';
 import Ripples, { RIPPLE_COUNT, Ripple, emptyRipples } from './Ripples';
 import { MATE_OUTLINE, MATE_OUTLINE_POINTS, Mate, MateShadow } from './Mate';
 import PenguinRing, { Hit, emptyHit, ronda } from './PenguinRing';
-import { haptic, loopVolume, play, tap } from './sound';
+import { haptic } from './sound';
 
 // ---------- Ajustes de la física ----------
 const DEAD_ZONE = 3; // grados de temblor de la mano que se ignoran
@@ -26,12 +26,9 @@ const RESTITUTION = 0.4; // cuánto rebota contra los pingüinos y los bordes
 const MAX_LEAN = 30; // grados de giro máximo al moverse
 const BUTTON_H = 58;
 
-// Sonido (corre en el hilo de JS; la física le avisa con scheduleOnRN)
-const knock = (strength: number) => {
-  play('toc', 0.25 + 0.75 * strength);
-  haptic.bump(strength);
-};
-const slide = (volume: number) => loopVolume('deslizar', volume);
+// En el inicio no hay sonido (en el celular no queda bien): solo vibra al chocar.
+// Corre en el hilo de JS; la física le avisa con scheduleOnRN.
+const knock = (strength: number) => haptic.bump(strength);
 
 export default function Scene({ onStart }: { onStart?: () => void }) {
   const { width, height } = useWindowDimensions();
@@ -80,10 +77,7 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
   const rippleAcc = useSharedValue(0);
   const hit = useSharedValue<Hit>(emptyHit());
   const lastKnock = useSharedValue(-1);
-  const slideVol = useSharedValue(0);
-  const slideAt = useSharedValue(0);
 
-  useEffect(() => () => slide(0), []);
 
   // Respaldo para la versión web en el celular (Reanimated no lee sensores en el navegador)
   const webOk = useSharedValue(0);
@@ -226,7 +220,7 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
         // Los pingüinos cercanos al golpe dan un saltito, empezando por los más cercanos
         const strength = Math.min(1, (s - 60) / 380);
         hit.value = { t: clock.value, s: strength, x: hx, y: hy };
-        // Toc del mate (como mucho uno cada 90 ms, aunque toque dos cosas a la vez)
+        // Vibración del golpe (como mucho una cada 90 ms, aunque toque dos cosas a la vez)
         if (clock.value - lastKnock.value > 0.09) {
           lastKnock.value = clock.value;
           scheduleOnRN(knock, strength);
@@ -313,15 +307,6 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
     sx.value = 1 + bob - squashX.value + 0.5 * squashY.value;
     sy.value = 1 + bob - squashY.value + 0.5 * squashX.value;
 
-    // ---------- 6b. Roce sobre la yerba: más fuerte cuanto más rápido (se actualiza ~8 veces por segundo) ----------
-    const vol = spd < 25 ? 0 : Math.min(0.55, (spd - 25) / 700);
-    const changed = Math.abs(vol - slideVol.value) > 0.03 || (vol === 0 && slideVol.value !== 0);
-    if (t - slideAt.value > 0.12 && changed) {
-      slideAt.value = t;
-      slideVol.value = vol;
-      scheduleOnRN(slide, vol);
-    }
-
     // ---------- 7. Ondas: solo al moverse, más y más fuertes cuanto más rápido ----------
     if (spd > 30) {
       const rate = Math.min(16, 2.5 + spd / 45);
@@ -381,7 +366,7 @@ export default function Scene({ onStart }: { onStart?: () => void }) {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => { askWebPermission(); tap(); onStart?.(); }}
+        onPress={() => { askWebPermission(); onStart?.(); }}
         style={({ pressed }) => [
           styles.button,
           { bottom: buttonBottom, height: BUTTON_H, transform: [{ scale: pressed ? 0.97 : 1 }] },
