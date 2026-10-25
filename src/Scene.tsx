@@ -24,7 +24,7 @@ const RESTITUTION = 0.45; // cuánto rebota en las paredes
 const MAX_LEAN = 30; // grados de inclinación máxima al moverse
 const BUTTON_H = 58;
 
-export default function Scene() {
+export default function Scene({ onStart }: { onStart?: () => void }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const size = Math.round(Math.min(width * 0.52, 230));
@@ -316,7 +316,7 @@ export default function Scene() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={askWebPermission}
+        onPress={() => { askWebPermission(); onStart?.(); }}
         style={({ pressed }) => [
           styles.button,
           { bottom: buttonBottom, height: BUTTON_H, transform: [{ scale: pressed ? 0.97 : 1 }] },
